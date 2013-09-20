@@ -15,8 +15,8 @@ public class AdditionalClient {
     static int SERVER_PORT = 8000;
 
     /**
-     * Method set connection with server to send and receive some data.
-     * @param data - data to send to server
+     * Method set connection with db to send and receive some data.
+     * @param data - data to send to db
      * @throws IOException
      * @throws InterruptedException
      */

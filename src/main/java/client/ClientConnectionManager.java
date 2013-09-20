@@ -8,15 +8,15 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 /**
- * This class defines how client manages the connection with server: establishing connection with server, send request
- * for some data, receive response from server with required data, close connection.
+ * This class defines how client manages the connection with db: establishing connection with db, send request
+ * for some data, receive response from db with required data, close connection.
  */
 public class ClientConnectionManager {
     static int SERVER_PORT = 8000;
 
     /**
-     * Method set connection with server to send and receive some data.
-     * @param data - data to send to server
+     * Method set connection with db to send and receive some data.
+     * @param data - data to send to db
      * @throws IOException
      * @throws InterruptedException
      */

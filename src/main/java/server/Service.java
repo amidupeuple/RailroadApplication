@@ -7,7 +7,7 @@ import protocol.Constants;
 import org.hibernate.annotations.GenericGenerator;
 
 /**
- * It encapsulates methods which execute all possible services provided by server for clients
+ * It encapsulates methods which execute all possible services provided by db for clients
  */
 public class Service {
     /**

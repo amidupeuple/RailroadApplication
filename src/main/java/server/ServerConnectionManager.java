@@ -15,7 +15,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- * This class defines non-blocking server - it can handles many connections from client in one thread. Except for
+ * This class defines non-blocking db - it can handles many connections from client in one thread. Except for
  * lifecycle support of connections with clients, this class calls appropriate service by clint's request. Service
  * receive as a parameter request from client and return required data for client.
  */
