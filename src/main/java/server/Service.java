@@ -4,6 +4,8 @@ import protocol.RequestObject;
 import protocol.ResponseObject;
 import protocol.Constants;
 
+import org.hibernate.annotations.GenericGenerator;
+
 /**
  * It encapsulates methods which execute all possible services provided by server for clients
  */
@@ -28,6 +30,7 @@ public class Service {
     }
 
     private static ResponseObject addNewEntity() {
+
         return new ResponseObject();
     }
 
