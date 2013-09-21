@@ -1,8 +1,7 @@
-package gui;
+package client.gui;
 
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
-import javax.swing.SwingUtilities.*;
 
 /**
  * GUI panel for user

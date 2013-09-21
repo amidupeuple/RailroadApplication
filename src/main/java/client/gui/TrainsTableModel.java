@@ -1,4 +1,6 @@
-package gui;
+package client.gui;
+
+import protocol.ScheduleObject;
 
 import java.util.ArrayList;
 import javax.swing.table.AbstractTableModel;
@@ -8,7 +10,7 @@ import javax.swing.table.AbstractTableModel;
  */
 public class TrainsTableModel extends AbstractTableModel{
     
-    ArrayList<CompleteTrainInformation> trains;
+    ArrayList<ScheduleObject> trains;
     final String[] columnNames = {"№", 
                                  "От", 
                                  "До", 
@@ -17,11 +19,11 @@ public class TrainsTableModel extends AbstractTableModel{
                                  "Билеты"};
     
     public TrainsTableModel() {
-        trains = new ArrayList<CompleteTrainInformation>(); 
-        trains.add(new CompleteTrainInformation());
+        trains = new ArrayList<ScheduleObject>();
+        trains.add(new ScheduleObject());
     }
     
-    public TrainsTableModel(ArrayList<CompleteTrainInformation> trs) {
+    public TrainsTableModel(ArrayList<ScheduleObject> trs) {
         trains = trs;
     }
     

@@ -81,7 +81,7 @@ public class ServerConnectionManager {
                         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(buf.array());
                         ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
                         RequestObject reqObj = (RequestObject) objectInputStream.readObject();
-                        System.out.println((String) reqObj.getObject());
+                        System.out.println("Data from client received");
 
                         //Analyse and execute needed service
                         ResponseObject respObject = Service.execute(reqObj);

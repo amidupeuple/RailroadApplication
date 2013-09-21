@@ -1,11 +1,15 @@
 package client;
 
+import protocol.ScheduleObject;
 import protocol.*;
+import static protocol.Constants.POINT_OF_REFERENCE;
+import static protocol.Constants.HOUR;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.sql.Timestamp;
 
 /**
  * This class defines how client manages the connection with db: establishing connection with db, send request
@@ -30,9 +34,9 @@ public class ClientConnectionManager {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
             objectOutputStream.writeObject(data);
-            System.out.println((String) data.getObject());
             objectOutputStream.flush();
             channel.write(ByteBuffer.wrap(byteArrayOutputStream.toByteArray()));
+            System.out.println("sent");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -43,7 +47,7 @@ public class ClientConnectionManager {
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(buf.array());
             ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
             ResponseObject respObj = (ResponseObject) objectInputStream.readObject();
-            System.out.println((String) respObj.getObject());
+            System.out.println("received");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -57,7 +61,12 @@ public class ClientConnectionManager {
 
     public static void main(String[] args) {
         RequestObject data = new RequestObject(Constants.ClientService.getScheduleFromAtoB,
-                                               "AdditionalClient: give schedule from A to B");
+                                               new ScheduleObject(123,
+                                                                "Псков",
+                                                                "Москва",
+                                                                new Timestamp(POINT_OF_REFERENCE),
+                                                                new Timestamp(POINT_OF_REFERENCE + 23*HOUR),
+                                                                0));
         connect(data);
     }
 }
