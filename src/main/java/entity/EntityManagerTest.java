@@ -1,4 +1,4 @@
-package server.entity;
+package entity;
 
 import junit.framework.TestCase;
 
@@ -11,7 +11,6 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import java.sql.Timestamp;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -42,7 +41,7 @@ public class EntityManagerTest extends TestCase {
         entityManagerFactory.close();
     }
 
-    public void testStationInRoute() {
+    /*public void testStationInRoute() {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         entityManager.getTransaction().begin();
 
@@ -79,33 +78,40 @@ public class EntityManagerTest extends TestCase {
         entityManager.getTransaction().commit();
         entityManager.close();
 
-    }
+    }*/
 
 
     public void testBasicUsage() {
         // create a couple of events...
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         entityManager.getTransaction().begin();
-        entityManager.persist( new Train(1, 150) );
-        entityManager.persist( new Train(2, 290) );
-        entityManager.persist( new Train(3, 35) );
-        entityManager.getTransaction().commit();
-        entityManager.close();
 
-        // now lets pull events from the database and list them
-        entityManager = entityManagerFactory.createEntityManager();
-        entityManager.getTransaction().begin();
-        List<Train> result = entityManager.createQuery( "from Train", Train.class ).getResultList();
-        for ( Train train : result ) {
-            System.out.println( "Train number (" + train.getNumber() + ") : " + train.getVacancies() );
-        }
+        /*Train t = new Train(5, 123);
+        entityManager.persist(t);*/
+
+        Passenger p = new Passenger("Ed", "Krot", null);
+        Ticket t = new Ticket();
+        Train train = new Train(567, 123);
+
+        t.setPassenger(p);
+        t.setTrain(train);
+        Set<Ticket> setTickets = new HashSet<Ticket>(1);
+        setTickets.add(t);
+        p.setTickets(setTickets);
+        train.setTickets(setTickets);
+
+        entityManager.persist(train);
+        entityManager.persist(t);
+        entityManager.persist(p);
+
+
         entityManager.getTransaction().commit();
         entityManager.close();
     }
 
     public static void main(String[] args) {
         EntityManagerTest entity = new EntityManagerTest();
-        entity.testStationInRoute();
+        entity.testBasicUsage();
         entity.getEntityManagerFactory().close();
     }
 }

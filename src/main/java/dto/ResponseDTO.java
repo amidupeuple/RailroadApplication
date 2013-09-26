@@ -1,4 +1,6 @@
-package protocol;
+package dto;
+
+import protocol.Constants;
 
 import java.io.Serializable;
 
@@ -6,14 +8,14 @@ import java.io.Serializable;
  * This is response from db to client. It contains status of executed requested service and result of
  * this service.
  */
-public class ResponseObject implements Serializable{
+public class ResponseDTO implements Serializable{
     Constants.StatusOfExecutedService status;   //Status
 
     Object object;                              //Required data from db ~ result
 
-    public ResponseObject() {}
+    public ResponseDTO() {}
 
-    public ResponseObject(Constants.StatusOfExecutedService st, Object obj) {
+    public ResponseDTO(Constants.StatusOfExecutedService st, Object obj) {
         status = st;
         object = obj;
     }

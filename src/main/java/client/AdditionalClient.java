@@ -1,5 +1,7 @@
 package client;
 
+import dto.RequestDTO;
+import dto.ResponseDTO;
 import protocol.*;
 
 import java.io.*;
@@ -20,7 +22,7 @@ public class AdditionalClient {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static void connect(RequestObject data) {
+    public static void connect(RequestDTO data) {
         SocketChannel channel = null;
         ObjectOutputStream outputStream = null;
 
@@ -42,7 +44,7 @@ public class AdditionalClient {
             channel.read(buf);
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(buf.array());
             ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
-            ResponseObject respObj = (ResponseObject) objectInputStream.readObject();
+            ResponseDTO respObj = (ResponseDTO) objectInputStream.readObject();
             System.out.println((String) respObj.getObject());
         } catch (Exception e) {
             e.printStackTrace();
@@ -56,7 +58,7 @@ public class AdditionalClient {
     }
 
     public static void main(String[] args) {
-        RequestObject data = new RequestObject(Constants.ClientService.getScheduleFromAtoB,
+        RequestDTO data = new RequestDTO(Constants.ClientService.getScheduleFromAtoB,
                                                "AdditionalClient: give schedule on station A");
         connect(data);
     }

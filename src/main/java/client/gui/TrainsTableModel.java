@@ -1,7 +1,8 @@
 package client.gui;
 
-import protocol.ScheduleObject;
+import dto.ScheduleDTO;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import javax.swing.table.AbstractTableModel;
 
@@ -9,8 +10,16 @@ import javax.swing.table.AbstractTableModel;
  * This is model for jtable in user's gui panel. It displays schedule of trains.
  */
 public class TrainsTableModel extends AbstractTableModel{
-    
-    ArrayList<ScheduleObject> trains;
+
+    public void setTrains(ArrayList<ScheduleDTO> trains) {
+        this.trains = trains;
+    }
+
+    public ArrayList<ScheduleDTO> getTrains() {
+        return trains;
+    }
+
+    ArrayList<ScheduleDTO> trains;
     final String[] columnNames = {"№", 
                                  "От", 
                                  "До", 
@@ -19,13 +28,15 @@ public class TrainsTableModel extends AbstractTableModel{
                                  "Билеты"};
     
     public TrainsTableModel() {
-        trains = new ArrayList<ScheduleObject>();
-        trains.add(new ScheduleObject());
+        trains = new ArrayList<ScheduleDTO>();
+        //trains.add(new ScheduleDTO());
     }
     
-    public TrainsTableModel(ArrayList<ScheduleObject> trs) {
+    public TrainsTableModel(ArrayList<ScheduleDTO> trs) {
         trains = trs;
     }
+
+
     
     @Override
     public int getRowCount() {
@@ -44,15 +55,21 @@ public class TrainsTableModel extends AbstractTableModel{
 
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
+        SimpleDateFormat format = new SimpleDateFormat("HH:mm");
+
         switch(columnIndex) {
             case 0: return trains.get(rowIndex).getNumber();
             case 1: return trains.get(rowIndex).getFromStation();
             case 2: return trains.get(rowIndex).getToStation();
-            case 3: return trains.get(rowIndex).getDepartureTime().toString();
-            case 4: return trains.get(rowIndex).getArrivalTime().toString();
+            case 3: if (trains.get(rowIndex).getDepartureTime() == null) return "";
+                    else return format.format(trains.get(rowIndex).getDepartureTime());
+            case 4: if (trains.get(rowIndex).getArrivalTime() == null) return "";
+                    else return format.format(trains.get(rowIndex).getArrivalTime());
             case 5: return trains.get(rowIndex).getTicketsAmount();
             default: return null;
         }
     }
+
+
     
 }

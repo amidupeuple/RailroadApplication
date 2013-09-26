@@ -1,8 +1,7 @@
 package server;
 
-import protocol.RequestObject;
-import protocol.ResponseObject;
-import server.Service;
+import dto.RequestDTO;
+import dto.ResponseDTO;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -80,11 +79,11 @@ public class ServerConnectionManager {
                         client.read(buf);
                         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(buf.array());
                         ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
-                        RequestObject reqObj = (RequestObject) objectInputStream.readObject();
+                        RequestDTO reqObj = (RequestDTO) objectInputStream.readObject();
                         System.out.println("Data from client received");
 
                         //Analyse and execute needed service
-                        ResponseObject respObject = Service.execute(reqObj);
+                        ResponseDTO respObject = Service.execute(reqObj);
 
                         //Send data to client
                         try {
@@ -113,7 +112,7 @@ public class ServerConnectionManager {
                     try {
                         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
                         ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-                        objectOutputStream.writeObject(new ResponseObject(1, "Server: required data"));
+                        objectOutputStream.writeObject(new ResponseDTO(1, "Server: required data"));
                         System.out.println("Server: required data");
                         objectOutputStream.flush();
                         client.write(ByteBuffer.wrap(byteArrayOutputStream.toByteArray()));

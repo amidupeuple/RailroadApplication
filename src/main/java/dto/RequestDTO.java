@@ -1,4 +1,6 @@
-package protocol;
+package dto;
+
+import protocol.Constants;
 
 import java.io.Serializable;
 
@@ -6,12 +8,14 @@ import java.io.Serializable;
  * Request data from client to db. It transmitted to db through serialization with nio. It encapsulates
  * type of desired service and parameters for executing this service.
  */
-public class RequestObject implements Serializable{
+public class RequestDTO implements Serializable{
     Constants.ClientService service;    //Service type
 
     Object object;                      //Parameters for service
 
-    public RequestObject(Constants.ClientService ser, Object obj) {
+    public RequestDTO() {}
+
+    public RequestDTO(Constants.ClientService ser, Object obj) {
         service = ser;
         object = obj;
     }
@@ -22,5 +26,13 @@ public class RequestObject implements Serializable{
 
     public Object getObject() {
         return object;
+    }
+
+    public void setService(Constants.ClientService service) {
+        this.service = service;
+    }
+
+    public void setObject(Object object) {
+        this.object = object;
     }
 }

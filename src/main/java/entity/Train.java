@@ -1,4 +1,4 @@
-package server.entity;
+package entity;
 
 import javax.persistence.*;
 import java.util.Set;
@@ -16,6 +16,7 @@ public class Train {
     private int number;
     private int vacancies;
     private Set<StationInRoute> stations;
+    private Set<Ticket> tickets;
 
     public Train(){}
 
@@ -50,6 +51,15 @@ public class Train {
 
     public void setStations(Set<StationInRoute> s) {
         this.stations = s;
+    }
+
+    @OneToMany(mappedBy = "train")
+    public Set<Ticket> getTickets() {
+        return tickets;
+    }
+
+    public void setTickets(Set<Ticket> tickets) {
+        this.tickets = tickets;
     }
 
 

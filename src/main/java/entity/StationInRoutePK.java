@@ -1,6 +1,7 @@
-package server.entity;
+package entity;
 
 import javax.persistence.Basic;
+import javax.persistence.Column;
 import javax.persistence.Embeddable;
 import java.io.Serializable;
 
@@ -14,9 +15,11 @@ import java.io.Serializable;
 @Embeddable
 public class StationInRoutePK implements Serializable{
     @Basic
+    @Column(name = "route_id")
     private int routeId;
 
     @Basic
+    @Column(name = "number_in_route")
     private int numberInRoute;
 
     public StationInRoutePK() {}

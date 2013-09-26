@@ -8,7 +8,7 @@ public class Constants {
     public enum ClientType {user, admin};
 
     //Possible services that may be requested by the client
-    public enum ClientService {getScheduleFromAtoB, scheduleForStation, ticketPurchase,
+    public enum ClientService {getScheduleFromAtoB, scheduleForStation, buyTicket,
                         addEntity, viewPassangers, viewTrains, saleTicket};
 
     //Status of executing service

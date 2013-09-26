@@ -1,15 +1,17 @@
 package client;
 
-import protocol.ScheduleObject;
+import dto.RequestDTO;
+import dto.ResponseDTO;
+import dto.ScheduleDTO;
 import protocol.*;
-import static protocol.Constants.POINT_OF_REFERENCE;
+
 import static protocol.Constants.HOUR;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.sql.Timestamp;
+import java.sql.Time;
 
 /**
  * This class defines how client manages the connection with db: establishing connection with db, send request
@@ -24,9 +26,10 @@ public class ClientConnectionManager {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static void connect(RequestObject data) {
+    public static ResponseDTO connect(RequestDTO data) {
         SocketChannel channel = null;
         ObjectOutputStream outputStream = null;
+        ResponseDTO respObj = null;
 
         try {
             channel = SocketChannel.open();
@@ -42,11 +45,11 @@ public class ClientConnectionManager {
         }
 
         try {
-            ByteBuffer buf = ByteBuffer.allocate(1024);
+            ByteBuffer buf = ByteBuffer.allocate(2048);
             channel.read(buf);
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(buf.array());
             ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
-            ResponseObject respObj = (ResponseObject) objectInputStream.readObject();
+            respObj = (ResponseDTO) objectInputStream.readObject();
             System.out.println("received");
         } catch (Exception e) {
             e.printStackTrace();
@@ -56,16 +59,18 @@ public class ClientConnectionManager {
             channel.close();
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            return respObj;
         }
     }
 
     public static void main(String[] args) {
-        RequestObject data = new RequestObject(Constants.ClientService.getScheduleFromAtoB,
-                                               new ScheduleObject(123,
+        RequestDTO data = new RequestDTO(Constants.ClientService.getScheduleFromAtoB,
+                                               new ScheduleDTO(123,
                                                                 "Псков",
                                                                 "Москва",
-                                                                new Timestamp(POINT_OF_REFERENCE),
-                                                                new Timestamp(POINT_OF_REFERENCE + 23*HOUR),
+                                                                new Time(HOUR),
+                                                                new Time(23*HOUR),
                                                                 0));
         connect(data);
     }
