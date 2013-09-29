@@ -7,7 +7,7 @@ package server.exceptions;
  * Time: 1:32 PM
  * To change this template use File | Settings | File Templates.
  */
-public class NoVacanciesException extends AbstractBookingTicketException {
+public class NoVacanciesException extends BookingTicketException {
 
     public NoVacanciesException(String mes) {
         super(mes);

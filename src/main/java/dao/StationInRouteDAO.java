@@ -1,11 +1,22 @@
 package dao;
 
+import dto.ResponseDTO;
+import dto.ScheduleDTO;
+import entity.Route;
+import entity.Station;
+import entity.StationInRoute;
+import entity.Train;
 import org.apache.log4j.Logger;
+import protocol.Constants;
+import server.exceptions.AddRouteException;
+import server.exceptions.EntityUpdateException;
+import server.exceptions.NoSuchStationNameException;
+import server.exceptions.NoSuchTrainException;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import java.sql.Time;
-import java.util.List;
+import java.util.*;
 
 /**
  * DAO for StationInRoute class.
@@ -33,7 +44,7 @@ public class StationInRouteDAO {
 
         List<Time> buffer = entityManager.createQuery(
                 "select s.departureTime from StationInRoute s " +
-                "where s.train.number = ?1 and s.name = ?2"
+                "where s.train.number = ?1 and s.station.name = ?2"
         ).setParameter(1, trainNumber)
          .setParameter(2, station)
          .getResultList();
@@ -93,5 +104,203 @@ public class StationInRouteDAO {
         entityManager.getTransaction().commit();
 
         return resultList;
+    }
+
+    /**
+     * Get list of schedule objects, it represents train schedule from station A to station B in given time interval.
+     * We set in the fromStation field of ScheduleDTO object starting station in particular route, and in the field
+     * toStation we set finish station of particular route. In the field departureTime we set departureTime from
+     * station A, and in arrivalTime we set arrival time to the station B.
+     * @param stationA
+     * @param stationB
+     * @param from - start of time interval
+     * @param to - finish of time interval
+     * @return list os schedule objects.
+     */
+    public List<ScheduleDTO> getScheduleFromAtoB(String stationA, String stationB, Time from, Time to) {
+        log.debug("Start method getScheduleFromAtoB(...)");
+        EntityManager entityManager = entityManagerFactory.createEntityManager();
+        entityManager.getTransaction().begin();
+
+        //Result of this query is list of Object's arrays. Length of each array is 5 elements: 0 - train number,
+        //1 - first station in route, 2 - last station in route, 3 - departure time from station A,
+        //4 - arrival time to station B, 5 - amount of vacancies in this train.
+        List<Object[]> resultList = entityManager.createQuery(
+                "select sir1.train.number, sir1.station.name, sir2.station.name, sir3.departureTime, " +
+                "       sir4.arrivalTime, sir1.train.vacancies " +
+                "from StationInRoute sir1, StationInRoute sir2, StationInRoute sir3, StationInRoute sir4 " +
+                "where sir1.train.id = sir2.train.id and sir1.train.id = sir3.train.id and sir1.train.id = sir4.train.id and " +
+                "      sir1.departureTime = (select min(sir5.departureTime) " +
+                "                            from StationInRoute sir5 " +
+                "                            where sir5.train.id = sir1.train.id) and " +
+                "      sir2.arrivalTime =  (select max(sir6.arrivalTime) " +
+                "                           from StationInRoute sir6 " +
+                "                           where sir6.train.id = sir2.train.id) and " +
+                "      sir3.station.name = ?1 and sir4.station.name = ?2 and " +
+                "      sir3.departureTime > ?3 and sir3.departureTime < ?4"
+        ).setParameter(1, stationA)
+        .setParameter(2, stationB)
+        .setParameter(3, from)
+        .setParameter(4, to)
+        .getResultList();
+
+        entityManager.getTransaction().commit();
+        log.debug("Data from DB successfully received");
+
+        // Packaging response list of objects based on data retrieved from data base.
+        int size = resultList.size();
+        ArrayList<ScheduleDTO> scheduleList = new ArrayList<ScheduleDTO>(size);
+        for (int i = 0; i < size; i++) {
+            Object[] stationsBuf = resultList.get(i);
+            scheduleList.add(new ScheduleDTO((Integer) stationsBuf[0],
+                    (String) stationsBuf[1],
+                    (String) stationsBuf[2],
+                    (Time) stationsBuf[3],
+                    (Time) stationsBuf[4],
+                    (Integer) stationsBuf[5]));
+        }
+
+        log.debug("Finish method getScheduleFromAtoB(...)");
+        return  scheduleList;
+    }
+
+    /**
+     * Based on user requirements this method find schedule for given station (e.g. station A).
+     * @param userRequirements - it contains name of station A.
+     * @return - list of ScheduleDTO objects.
+     */
+    public List<ScheduleDTO> getScheduleForStation(ScheduleDTO userRequirements) {
+        log.debug("Start method getScheduleForStation(...)");
+        EntityManager entityManager = entityManagerFactory.createEntityManager();
+        entityManager.getTransaction().begin();
+
+        //This query returns list of Objects arrays, each array contains such elements: 0 - train number, 1 - first
+        //station in route, 2 - last station in route, 3 - departure time from station A, 4 - arrival to station A,
+        //5 - vacancies in appropriate train.
+        List<Object[]> resultList = entityManager.createQuery(
+                "select sir1.train.number, sir1.station.name, sir2.station.name, " +
+                "       sir3.departureTime, sir3.arrivalTime, sir1.train.vacancies " +
+                "from StationInRoute sir1, StationInRoute sir2, StationInRoute sir3 " +
+                "where sir1.train.id = sir2.train.id and sir1.train.id = sir3.train.id and " +
+                "      sir1.departureTime = (select min(sir4.departureTime) " +
+                "                            from StationInRoute sir4 " +
+                "                            where sir4.train.id = sir1.train.id) and " +
+                "      sir2.arrivalTime = (select max(sir5.arrivalTime) " +
+                "                          from StationInRoute sir5 " +
+                "                          where sir5.train.id = sir2.train.id) and " +
+                "      sir3.station.name = ?1"
+        ).setParameter(1, userRequirements.getFromStation())
+         .getResultList();
+
+        int size = resultList.size();
+        ArrayList<ScheduleDTO> scheduleList = new ArrayList<ScheduleDTO>(size);
+        for (int i = 0; i < size; i++) {
+            Object[] arr = resultList.get(i);
+            scheduleList.add(new ScheduleDTO((Integer) arr[0],
+                    (String) arr[1],
+                    (String) arr[2],
+                    (Time) arr[3],
+                    (Time) arr[4],
+                    (Integer) arr[5]));
+        }
+
+        return scheduleList;
+    }
+
+    public List<Integer> getListOfRoutesIDForStation(String station) {
+        log.debug("Start method getListOfRoutesIDForStation(...)");
+        EntityManager entityManager = entityManagerFactory.createEntityManager();
+        entityManager.getTransaction().begin();
+
+        List<Integer> routesID = entityManager.createQuery(
+                "select s.route.id from StationInRoute s " +
+                "where s.station.name = ?1"
+        ).setParameter(1, station)
+         .getResultList();
+
+        log.debug("Start method getListOfRoutesIDForStation(...)");
+        return routesID;
+    }
+
+    /**
+     * Creation of new route consists of the following steps:
+     * - check if number of train specified in administrator's requirements not used in existing route
+     * - create new record in Route table
+     * - create as many records in StationInRoute table as administrator mentioned in his requirements
+     * @param stations - administrator requirements which contains: number of train corresponding to a new route,
+     *                   set of stations necessary to add to a new route
+     * @throws EntityUpdateException
+     */
+    public void addRoute(List<ScheduleDTO> stations) throws EntityUpdateException{
+        log.debug("Start: addRoute()");
+        Set<StationInRoute> setOfStationsInRoute = new HashSet<StationInRoute>();
+        RouteDAO routeDAO = new RouteDAO(entityManagerFactory);
+
+        //Create new route record
+        routeDAO.addRoute();
+
+        EntityManager entityManager = entityManagerFactory.createEntityManager();
+        entityManager.getTransaction().begin();
+
+        //Check if this train already in some route
+        List<Integer> bufForRouteId = entityManager.createQuery(
+                "select s.route.id from StationInRoute s where s.train.number = ?1"
+        ).setParameter(1, stations.get(0).getNumber()).getResultList();
+
+        if (!bufForRouteId.isEmpty()) {
+            log.debug("Exception: train already in route");
+            throw new AddRouteException("Указанный поезд уже задействован в другом маршруте!");
+        }
+
+        //Get desired train for new route
+        List<Train> trainBuf = entityManager.createQuery(
+                "select t from Train t where t.number = ?1"
+        ).setParameter(1, stations.get(0).getNumber()).getResultList();
+
+        if (trainBuf.isEmpty()) {
+            log.debug("Exception: there is no train with mentioned number.");
+            throw new NoSuchTrainException("Поезда с указанным номером не существует");
+        }
+        Train train = trainBuf.get(0);
+
+        //Get new route instance
+        List<Route> routeBuf = entityManager.createQuery(
+                "select r from Route r where r.id = (select max(r1.id) from Route r1)"
+        ).getResultList();
+        Route route = routeBuf.get(0);
+
+        //Create set of StationInRoute instances.
+        for (int i = 0; i < stations.size(); i++) {
+            List<Station> buf = entityManager.createQuery(
+                    "select s from Station s where s.name = ?1"
+            ).setParameter(1, stations.get(i).getFromStation()).getResultList();
+
+            if (buf.isEmpty()) {
+                log.debug("Exception: no such station name in Station table.");
+                throw new NoSuchStationNameException("Отсутсвует станция с названием" + stations.get(i).getFromStation());
+            }
+
+            StationInRoute sir = new StationInRoute(stations.get(i).getDepartureTime(),
+                                                    stations.get(i).getArrivalTime());
+            sir.setTrain(train);
+            sir.setRoute(route);
+            sir.setStation(buf.get(0));
+
+            setOfStationsInRoute.add(sir);
+        }
+
+        train.setStationsInRoute(setOfStationsInRoute);
+        route.setStationsInRoute(setOfStationsInRoute);
+
+        entityManager.persist(train);
+        entityManager.persist(route);
+
+        Iterator<StationInRoute> it = setOfStationsInRoute.iterator();
+        while (it.hasNext()) {
+            entityManager.persist(it.next());
+        }
+
+        log.debug("Finish: addRoute()");
+        entityManager.getTransaction().commit();
     }
 }

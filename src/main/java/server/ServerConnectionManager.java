@@ -75,7 +75,7 @@ public class ServerConnectionManager {
 
                     //Receive data from client
                     try {
-                        ByteBuffer buf = ByteBuffer.allocate(1024);
+                        ByteBuffer buf = ByteBuffer.allocate(2048);
                         client.read(buf);
                         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(buf.array());
                         ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);

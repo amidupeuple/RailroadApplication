@@ -5,6 +5,8 @@ import dto.RequestDTO;
 import dto.ResponseDTO;
 import dto.ScheduleDTO;
 
+import static protocol.Constants.HOUR;
+import static protocol.Constants.MINUTE;
 import static protocol.Constants.POINT_OF_REFERENCE;
 
 import protocol.*;
@@ -28,15 +30,19 @@ public class ClientGUIPanel extends javax.swing.JPanel {
         initComponents();
         requestObject = new RequestDTO();
         scheduleObject = new ScheduleDTO();
+
+        //Set default time interval
+        scheduleObject.setDepartureTime(new Time(POINT_OF_REFERENCE));
+        scheduleObject.setArrivalTime(new Time(POINT_OF_REFERENCE + 23*HOUR + 59*MINUTE));
     }
 
     private void initComponents() {
 
         optionsButtonGroup = new javax.swing.ButtonGroup();
-        trainScheduleRadioButton = new javax.swing.JRadioButton();
+        scheduleForStationRadioButton = new javax.swing.JRadioButton();
         stationTextField = new javax.swing.JTextField();
         stationLabel = new javax.swing.JLabel();
-        trainSearchRadioButton = new javax.swing.JRadioButton();
+        scheduleFromAtoBRadioButton = new javax.swing.JRadioButton();
         fromStationLabel = new javax.swing.JLabel();
         toStationLabel = new javax.swing.JLabel();
         fromStationTextField = new javax.swing.JTextField();
@@ -57,27 +63,33 @@ public class ClientGUIPanel extends javax.swing.JPanel {
         disableScheduleForStationWidgets();
         disableTrainSearchWidgets();
 
-        optionsButtonGroup.add(trainScheduleRadioButton);
-        trainScheduleRadioButton.setText("Расписание поездов по станции:");
-        trainScheduleRadioButton.addActionListener(new java.awt.event.ActionListener() {
+        optionsButtonGroup.add(scheduleForStationRadioButton);
+        scheduleForStationRadioButton.setText("Расписание поездов по станции:");
+        scheduleForStationRadioButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                trainScheduleRadioButtonActionPerformed(evt);
+                scheduleForStationRadioButtonActionPerformed(evt);
             }
         });
 
-        stationTextField.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                stationTextFieldActionPerformed(evt);
+        stationTextField.addFocusListener(new FocusListener() {
+            @Override
+            public void focusGained(FocusEvent e) {
+
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                scheduleObject.setFromStation(stationTextField.getText());
             }
         });
 
         stationLabel.setText("Станция:");
 
-        optionsButtonGroup.add(trainSearchRadioButton);
-        trainSearchRadioButton.setText("Поиск поезда:");
-        trainSearchRadioButton.addActionListener(new java.awt.event.ActionListener() {
+        optionsButtonGroup.add(scheduleFromAtoBRadioButton);
+        scheduleFromAtoBRadioButton.setText("Поиск поезда:");
+        scheduleFromAtoBRadioButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                trainSearchRadioButtonActionPerformed(evt);
+                scheduleFromAtoBRadioButtonActionPerformed(evt);
             }
         });
 
@@ -149,22 +161,6 @@ public class ClientGUIPanel extends javax.swing.JPanel {
                     ListSelectionModel model = trainsTable.getSelectionModel();
                     model.setSelectionInterval(rowNumber, rowNumber);
                 }
-                /*else if (SwingUtilities.isRightMouseButton(e)) {
-                    Point p = e.getPoint();
-                    int rowNumber = trainsTable.rowAtPoint(p);
-                    ListSelectionModel model = trainsTable.getSelectionModel();
-                    model.setSelectionInterval(rowNumber, rowNumber);
-
-                    JPopupMenu popupMenu = new JPopupMenu();
-                    JMenuItem menuItemBuyTicket = new JMenuItem("Купить билет");
-                    menuItemBuyTicket.addActionListener(new BuyTicketButtonListener(trainsTableModel.getTrains(),
-                                                                                      rowNumber));
-
-                    popupMenu.add(menuItemBuyTicket);
-                    popupMenu.show(trainsTable,e.getX(),e.getY());
-
-                }*/
-
             }
         });
 
@@ -190,8 +186,8 @@ public class ClientGUIPanel extends javax.swing.JPanel {
                         .addComponent(resetButton))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(trainScheduleRadioButton)
-                            .addComponent(trainSearchRadioButton))
+                            .addComponent(scheduleForStationRadioButton)
+                            .addComponent(scheduleFromAtoBRadioButton))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
@@ -222,12 +218,12 @@ public class ClientGUIPanel extends javax.swing.JPanel {
             .addGroup(layout.createSequentialGroup()
                 .addGap(24, 24, 24)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(trainScheduleRadioButton)
+                    .addComponent(scheduleForStationRadioButton)
                     .addComponent(stationTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(stationLabel))
                 .addGap(40, 40, 40)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(trainSearchRadioButton)
+                    .addComponent(scheduleFromAtoBRadioButton)
                     .addComponent(fromStationTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(fromStationLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
@@ -254,27 +250,31 @@ public class ClientGUIPanel extends javax.swing.JPanel {
     private void showButtonActionPerformed() {
 
         //Check correctness of data prepared to send to server.
-        if (isScheduleForStation) {
-            if (scheduleObject.getFromStation().equals("")) {
-                System.out.println("no station");
+        if (mode == SelectedOption.scheduleForStation) {
+            if (scheduleObject.getFromStation() == null || scheduleObject.getFromStation().equals("")) {
+                JOptionPane.showMessageDialog(null, "Некорректно введена станция. Повторите ввод.");
                 return;
             }
-        } else {
-            if (scheduleObject.getFromStation().equals("")) {
-                System.out.println("no from station");
+        } else if (mode == SelectedOption.scheduleFromAtoB){
+            if (scheduleObject.getFromStation() == null || scheduleObject.getFromStation().equals("")) {
+                JOptionPane.showMessageDialog(null, "Некорректно введена станция отправления. Повторите ввод.");
                 return;
-            } else if (scheduleObject.getToStation().equals("")) {
-                System.out.println("no to station");
+            } else if (scheduleObject.getToStation() == null || scheduleObject.getToStation().equals("")) {
+                JOptionPane.showMessageDialog(null, "Некорректно введена станция прибытия. Повторите ввод.");
                 return;
             } else if (scheduleObject.getDepartureTime().after(scheduleObject.getArrivalTime())) {
-                System.out.println("uncorrect time interval");
+                JOptionPane.showMessageDialog(null, "Некорректно введен временной интервал. Повторите ввод.");
                 return;
             }
+        } else if (mode == SelectedOption.noSelection) {
+            JOptionPane.showMessageDialog(null, "Не выбрано ни одна из опций.");
+            return;
         }
 
         //Packaging data in instance of RequestDTO to send it to server
-        if (isScheduleForStation) requestObject.setService(Constants.ClientService.scheduleForStation);
-        else requestObject.setService(Constants.ClientService.getScheduleFromAtoB);
+        if (mode == SelectedOption.scheduleForStation) requestObject.setService(Constants.ClientService.scheduleForStation);
+        else if (mode == SelectedOption.scheduleFromAtoB) requestObject.setService(Constants.ClientService.getScheduleFromAtoB);
+
         requestObject.setObject(scheduleObject);
 
         //Sending data to the server and receiving response data.
@@ -291,19 +291,10 @@ public class ClientGUIPanel extends javax.swing.JPanel {
         SpinnerDateModel sm1 = new SpinnerDateModel(date, null, null, Calendar.MINUTE);
         SpinnerDateModel sm2 = new SpinnerDateModel(date, null, null, Calendar.MINUTE);
 
-
-
         timeFromSpinner.setModel(sm1);
         timeToSpinner.setModel(sm2);
         timeFromSpinner.setEditor(new JSpinner.DateEditor(timeFromSpinner, "HH:mm"));
         timeToSpinner.setEditor(new JSpinner.DateEditor(timeToSpinner, "HH:mm"));
-        /*JSpinner.DateEditor de1 = new JSpinner.DateEditor(timeFromSpinner, "HH:mm");
-        //de1.getTextField().setEditable(false);
-        JSpinner.DateEditor de2 = new JSpinner.DateEditor(timeToSpinner, "HH:mm");
-        //de2.getTextField().setEditable(false);
-
-        timeFromSpinner.setEditor(de1);
-        timeToSpinner.setEditor(de2);*/
     }
 
 
@@ -316,9 +307,6 @@ public class ClientGUIPanel extends javax.swing.JPanel {
         stationTextField.setEnabled(true);
     }
 
-    /**
-     * Disable widgets which corresponding "search train" radiobutton.
-     */
     private void disableTrainSearchWidgets() {
         fromStationTextField.setEnabled(false);
         toStationTextField.setEnabled(false);
@@ -340,37 +328,20 @@ public class ClientGUIPanel extends javax.swing.JPanel {
         buyTicketButton.setEnabled(true);
     }
 
-    private void trainScheduleRadioButtonActionPerformed(java.awt.event.ActionEvent evt) {
+    private void scheduleForStationRadioButtonActionPerformed(java.awt.event.ActionEvent evt) {
         clearScheduleResults();
-        isScheduleForStation = true;
+        mode = SelectedOption.scheduleForStation;
         enableScheduleForStationWidgets();
         disableTrainSearchWidgets();
     }
 
-    private void stationTextFieldActionPerformed(java.awt.event.ActionEvent evt) {
-        scheduleObject.setFromStation(stationTextField.getText());
-    }
-
-    private void fromStationTextFieldActionPerformed(java.awt.event.ActionEvent evt) {
-        scheduleObject.setFromStation(fromStationTextField.getText());
-    }
-
-    private void toStationTextFieldActionPerformed(java.awt.event.ActionEvent evt) {
-        scheduleObject.setToStation(toStationTextField.getText());
-    }
-
-    private void trainSearchRadioButtonActionPerformed(java.awt.event.ActionEvent evt) {
+    private void scheduleFromAtoBRadioButtonActionPerformed(java.awt.event.ActionEvent evt) {
         clearScheduleResults();
-        isScheduleForStation = false;
+        mode = SelectedOption.scheduleFromAtoB;
         enableTrainSearchWidgets();
         disableScheduleForStationWidgets();
     }
 
-    private void buyTicketButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buyTicketButtonActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_buyTicketButtonActionPerformed
-
-    // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton buyTicketButton;
     private javax.swing.JLabel colonLabel;
     private javax.swing.JLabel fromStationLabel;
@@ -387,8 +358,8 @@ public class ClientGUIPanel extends javax.swing.JPanel {
     private javax.swing.JSpinner timeToSpinner;
     private javax.swing.JLabel toStationLabel;
     private javax.swing.JTextField toStationTextField;
-    private javax.swing.JRadioButton trainScheduleRadioButton;
-    private javax.swing.JRadioButton trainSearchRadioButton;
+    private javax.swing.JRadioButton scheduleForStationRadioButton;
+    private javax.swing.JRadioButton scheduleFromAtoBRadioButton;
     private javax.swing.JTable trainsTable;
     private TrainsTableModel trainsTableModel;
     // End of variables declaration//GEN-END:variables
@@ -397,8 +368,7 @@ public class ClientGUIPanel extends javax.swing.JPanel {
     ScheduleDTO scheduleObject;
     ResponseDTO responseObject;
 
-    private boolean isScheduleForStation;       //if true, user selected "schedule for station" service, otherwise
-                                                //train searching from station A to B in given time interval.
+    private SelectedOption mode = SelectedOption.noSelection;
 
     int rowNumber;                              //Number of selected row in the trainsTable.
     
@@ -426,35 +396,12 @@ public class ClientGUIPanel extends javax.swing.JPanel {
         }
     }
 
-    class TimeToListener implements ChangeListener {
-
-        @Override
-        public void stateChanged(ChangeEvent e) {
-            scheduleObject.setArrivalTime(new Time(((Date) timeToSpinner.getValue()).getTime()));
-            int i = 0;
-        }
-    }
-
-    class BuyTicketButtonListener implements ActionListener {
-        ArrayList<ScheduleDTO> schedule;
-        int row;
-
-        public BuyTicketButtonListener(ArrayList<ScheduleDTO> s, int r) {
-            schedule = s;
-            row = r;
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            JDialog dialog = new OrderDialog(null, true, schedule, row);
-            dialog.setLocationRelativeTo(null);
-            dialog.setVisible(true);
-        }
-    }
 
     private void clearScheduleResults() {
         trainsTableModel.setTrains(new ArrayList<ScheduleDTO>());
         trainsTableModel.fireTableDataChanged();
     }
+
+    private enum SelectedOption {noSelection, scheduleForStation, scheduleFromAtoB};
 
 }

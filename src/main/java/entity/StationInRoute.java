@@ -16,70 +16,41 @@ import java.util.Calendar;
 @Entity
 @Table(name = "station_in_route")
 public class StationInRoute {
-    @EmbeddedId
-    private StationInRoutePK id;
-
-    @Column(name = "departure_time")
-    private Time departureTime;
-
-    @Column(name = "arrival_time")
-    private Time arrivalTime;
-
-    private String name;
-
-    @ManyToOne
+    private int id;
     private Train train;
+    private Route route;
+    private Station station;
+    private Time departureTime;
+    private Time arrivalTime;
 
     public StationInRoute() {}
 
-    public StationInRoute(StationInRoutePK stationID, String n, Time dep, Time arr) {
-        id = stationID;
-        name = n;
+    public StationInRoute(Time dep, Time arr) {
         departureTime = dep;
         arrivalTime = arr;
     }
 
-    public boolean isBiggerThan(Timestamp date) {
-        Date date1 = new Date(departureTime.getTime());
-        Date date2 = new Date(date.getTime());
-
-        Calendar cal1 = Calendar.getInstance();
-        cal1.setTime(date1);
-
-        Calendar cal2 = Calendar.getInstance();
-        cal2.setTime(date2);
-        cal2.set(Calendar.DAY_OF_MONTH, cal1.get(Calendar.DAY_OF_MONTH));
-        cal2.set(Calendar.MONTH, cal1.get(Calendar.MONTH));
-        cal2.set(Calendar.YEAR, cal1.get(Calendar.YEAR));
-
-        if (cal1.getTimeInMillis() - cal2.getTimeInMillis() < 0) return false;
-        else return true;
-    }
-
-    public StationInRoutePK getId() {
+    @Id
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
+    @Column(name = "id", precision = 0)
+    public int getId() {
         return id;
     }
 
-    public void setId(StationInRoutePK id) {
+    public void setId(int id) {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    @ManyToOne
+    public Station getStation() {
+        return station;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setStation(Station station) {
+        this.station = station;
     }
 
-    public Train getTrain() {
-        return train;
-    }
-
-    public void setTrain(Train train) {
-        this.train = train;
-    }
-
+    @Column(name = "departure_time")
     public Time getDepartureTime() {
         return departureTime;
     }
@@ -88,11 +59,30 @@ public class StationInRoute {
         this.departureTime = departureTime;
     }
 
+    @Column(name = "arrival_time")
     public Time getArrivalTime() {
         return arrivalTime;
     }
 
     public void setArrivalTime(Time arrivalTime) {
         this.arrivalTime = arrivalTime;
+    }
+
+    @ManyToOne
+    public Route getRoute() {
+        return route;
+    }
+
+    public void setRoute(Route route) {
+        this.route = route;
+    }
+
+    @ManyToOne
+    public Train getTrain() {
+        return train;
+    }
+
+    public void setTrain(Train train) {
+        this.train = train;
     }
 }

@@ -13,10 +13,11 @@ import java.util.Set;
 @Entity
 @Table(name = "train")
 public class Train {
+    private int id;
     private int number;
     private int vacancies;
-    private Set<StationInRoute> stations;
     private Set<Ticket> tickets;
+    private Set<StationInRoute> stationsInRoute;
 
     public Train(){}
 
@@ -26,7 +27,16 @@ public class Train {
     }
 
     @Id
-    @Column(name="number", precision=0)
+    @Column(name="id", precision=0)
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    @Column(name = "number")
     public int getNumber() {
         return number;
     }
@@ -45,15 +55,6 @@ public class Train {
     }
 
     @OneToMany(mappedBy = "train")
-    public Set<StationInRoute> getStations() {
-        return stations;
-    }
-
-    public void setStations(Set<StationInRoute> s) {
-        this.stations = s;
-    }
-
-    @OneToMany(mappedBy = "train")
     public Set<Ticket> getTickets() {
         return tickets;
     }
@@ -62,5 +63,12 @@ public class Train {
         this.tickets = tickets;
     }
 
+    @OneToMany(mappedBy = "train")
+    public Set<StationInRoute> getStationsInRoute() {
+        return stationsInRoute;
+    }
 
+    public void setStationsInRoute(Set<StationInRoute> stationsInRoute) {
+        this.stationsInRoute = stationsInRoute;
+    }
 }

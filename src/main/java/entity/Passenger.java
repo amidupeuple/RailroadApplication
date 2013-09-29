@@ -19,8 +19,6 @@ public class Passenger {
     private String firstName;
     private String secondName;
     private Date dateOfBirth;
-
-
     private Set<Ticket> tickets;
 
     public Passenger() {}

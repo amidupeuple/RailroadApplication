@@ -7,7 +7,7 @@ package server.exceptions;
  * Time: 4:16 PM
  * To change this template use File | Settings | File Templates.
  */
-public class LessThanTenMinutesBeforeDeparture extends AbstractBookingTicketException {
+public class LessThanTenMinutesBeforeDeparture extends BookingTicketException {
 
     public LessThanTenMinutesBeforeDeparture(String mes) {
         super(mes);

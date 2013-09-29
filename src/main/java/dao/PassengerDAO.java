@@ -1,5 +1,6 @@
 package dao;
 
+import dto.PassengerDTO;
 import entity.Passenger;
 import dto.OrderDTO;
 import org.apache.log4j.Logger;
@@ -7,6 +8,7 @@ import org.apache.log4j.Logger;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import java.sql.Date;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -108,6 +110,32 @@ public class PassengerDAO {
             log.debug("Finish method getPassenger(...)");
             return buf.get(0);
         }
+    }
+
+    public List<PassengerDTO> getPassengersByTrain(int trainNumber) {
+        log.debug("Start: getPassengersByTrain()");
+        ArrayList<PassengerDTO> passengers = new ArrayList<PassengerDTO>();
+
+        EntityManager entityManager = entityManagerFactory.createEntityManager();
+        entityManager.getTransaction().begin();
+
+        List<Passenger> bufPassengers = entityManager.createQuery(
+                "select p from Passenger p, Ticket t, Train tr " +
+                "where p.id = t.passenger.id and tr.number = ?1 and t.train.id = tr.id "
+        ).setParameter(1, trainNumber).getResultList();
+
+        entityManager.getTransaction().commit();
+
+        for (int i = 0; i < bufPassengers.size(); i++) {
+            PassengerDTO curPas = new PassengerDTO(bufPassengers.get(i).getFirstName(),
+                                                   bufPassengers.get(i).getSecondName(),
+                                                   bufPassengers.get(i).getDateOfBirth(),
+                                                   trainNumber);
+            passengers.add(curPas);
+        }
+
+        log.debug("Finish: getPassengersByTrain()");
+        return passengers;
     }
 
 }

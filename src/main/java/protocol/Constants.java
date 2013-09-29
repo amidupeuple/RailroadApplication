@@ -9,7 +9,7 @@ public class Constants {
 
     //Possible services that may be requested by the client
     public enum ClientService {getScheduleFromAtoB, scheduleForStation, buyTicket,
-                        addEntity, viewPassangers, viewTrains, saleTicket};
+                               addTrain, addStation, addRoute, viewPassangers, viewTrains, saleTicket};
 
     //Status of executing service
     public enum StatusOfExecutedService {success, error};

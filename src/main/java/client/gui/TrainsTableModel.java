@@ -25,7 +25,7 @@ public class TrainsTableModel extends AbstractTableModel{
                                  "До", 
                                  "Отправление", 
                                  "Прибытие", 
-                                 "Билеты"};
+                                 "Места"};
     
     public TrainsTableModel() {
         trains = new ArrayList<ScheduleDTO>();

@@ -6,25 +6,21 @@ import java.sql.Date;
 /**
  * Created with IntelliJ IDEA.
  * User: danya_000
- * Date: 9/23/13
- * Time: 1:01 PM
+ * Date: 9/28/13
+ * Time: 8:56 PM
  * To change this template use File | Settings | File Templates.
  */
-public class OrderDTO implements Serializable{
-    String firstName;
-    String secondName;
-    Date dateOfBirth;
-    int trainNumber;
-    String fromStation;
+public class PassengerDTO implements Serializable{
+    private String firstName;
+    private String secondName;
+    private Date dateOfBirth;
+    private int trainNumber;
 
-    public OrderDTO() {}
-
-    public OrderDTO(String first, String second, Date date, int numb, String fromSt) {
+    public PassengerDTO(String first, String second, Date date, int numb) {
         firstName = first;
         secondName = second;
         dateOfBirth = date;
         trainNumber = numb;
-        fromStation = fromSt;
     }
 
     public String getFirstName() {
@@ -58,13 +54,4 @@ public class OrderDTO implements Serializable{
     public void setTrainNumber(int trainNumber) {
         this.trainNumber = trainNumber;
     }
-
-    public String getFromStation() {
-        return fromStation;
-    }
-
-    public void setFromStation(String fromStation) {
-        this.fromStation = fromStation;
-    }
-
 }
