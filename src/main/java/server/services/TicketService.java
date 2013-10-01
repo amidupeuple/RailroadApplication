@@ -1,5 +1,7 @@
 package server.services;
 
+import static protocol.Constants.MINUTE;
+
 import dao.PassengerDAO;
 import dao.StationInRouteDAO;
 import dao.TicketDAO;
@@ -11,9 +13,6 @@ import entity.Passenger;
 import org.apache.log4j.Logger;
 import protocol.Constants;
 import server.exceptions.BookingTicketException;
-import server.exceptions.LessThanTenMinutesBeforeDeparture;
-import server.exceptions.NoVacanciesException;
-import server.exceptions.PassengerAlreadyRegisteredException;
 
 import javax.persistence.EntityManagerFactory;
 import java.sql.Date;
@@ -40,9 +39,7 @@ public class TicketService {
      * Service which allows user to book a place in train.
      * @param reqObj - DTO object from user with parameters of order.
      * @return instance of ResponseDTO contains status of service executing and some auxiliary data.
-     * @throws server.exceptions.NoVacanciesException - if no available vacancies in requested train.
-     * @throws server.exceptions.PassengerAlreadyRegisteredException - passangers with such data has already been registered.
-     * @throws server.exceptions.LessThanTenMinutesBeforeDeparture - if less than 10 minutes before train departure.
+     * @throws
      */
     public ResponseDTO bookTicket(RequestDTO reqObj) throws BookingTicketException {
         log.debug("BookTicket() start executing");
@@ -81,13 +78,9 @@ public class TicketService {
     /**
      * Method check possibility of registration new passenger to appropriate train.
      * @param order - parameters of user's order.
-     * @throws server.exceptions.NoVacanciesException - if no available vacancies in requested train.
-     * @throws server.exceptions.PassengerAlreadyRegisteredException - passangers with such data has already been registered.
-     * @throws server.exceptions.LessThanTenMinutesBeforeDeparture - if less than 10 minutes before train departure.
+     * @throws
      */
-    private void verifyOrder(OrderDTO order) throws NoVacanciesException,
-            PassengerAlreadyRegisteredException,
-            LessThanTenMinutesBeforeDeparture {
+    private void verifyOrder(OrderDTO order) throws BookingTicketException {
         log.debug("verifyOrder() start executing");
         TrainDAO train = new TrainDAO(entityManagerFactory);
         PassengerDAO passenger = new PassengerDAO(entityManagerFactory);
@@ -95,18 +88,18 @@ public class TicketService {
 
         //There's should be vacancy in desired train
         if ( train.getVacanciesInTrain(order.getTrainNumber()) < 1)
-            throw new NoVacanciesException("В выбранном поезде свободных мест нет");
+            throw new BookingTicketException("В выбранном поезде свободных мест нет");
 
         //User can't purchase a ticket on the same train twice.
         if ( passenger.isPassengerAlreadyRegistered(order) )
-            throw new PassengerAlreadyRegisteredException("Пассажир с указанными данными\nуже зарегистрирован на выбранный поезд");
+            throw new BookingTicketException("Пассажир с указанными данными\nуже зарегистрирован на выбранный поезд");
 
         //User can purchase a ticket if it's more than 10 minutes before train departure.
         //Computation of time before departure.
         long dif = compareOnlyTime(new Date(System.currentTimeMillis()),
                 new Date(station.getDepartureTime(order.getTrainNumber(), order.getFromStation()).getTime()));
         /*if (dif < 10*MINUTE)
-            throw new LessThanTenMinutesBeforeDeparture("До отправления поезда\nменьше десяти минут");*/
+            throw new BookingTicketException("До отправления поезда\nменьше десяти минут");*/
         log.debug("verifyOrder() finished");
     }
 

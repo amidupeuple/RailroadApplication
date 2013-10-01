@@ -2,7 +2,6 @@ package dao;
 
 import dto.ScheduleDTO;
 import entity.Train;
-import server.exceptions.AddTrainException;
 import server.exceptions.EntityUpdateException;
 
 import javax.persistence.EntityManager;
@@ -84,7 +83,7 @@ public class TrainDAO {
         try {
             entityManager.getTransaction().commit();
         } catch (Exception e) {
-            throw new AddTrainException("Ошибка! Такой поезд уже существует.");
+            throw new EntityUpdateException("Ошибка! Такой поезд уже существует.");
         }
     }
 

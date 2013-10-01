@@ -7,16 +7,13 @@ import dto.ScheduleDTO;
 import org.apache.log4j.Logger;
 import protocol.Constants;
 import server.exceptions.EntityUpdateException;
+import server.exceptions.GetScheduleException;
 
 import javax.persistence.EntityManagerFactory;
 import java.util.List;
 
 /**
- * Created with IntelliJ IDEA.
- * User: danya_000
- * Date: 9/28/13
- * Time: 11:39 AM
- * To change this template use File | Settings | File Templates.
+ * This class encapsulates services that appeal to station_in_route table in DB.
  */
 public class StationInRouteService {
 
@@ -35,17 +32,22 @@ public class StationInRouteService {
      * @return Trains schedule as list of ScheduleDTO objects.
      */
     public ResponseDTO scheduleFromAtoB(RequestDTO reqObj) {
-        log.debug("Start method scheduleFromAtoB(...)");
+        log.debug("Start: scheduleFromAtoB()");
+        List<ScheduleDTO> scheduleList;
         StationInRouteDAO stationInRouteDAO = new StationInRouteDAO(entityManagerFactory);
 
         ScheduleDTO userRequirements = (ScheduleDTO) reqObj.getObject();
 
-        List<ScheduleDTO> scheduleList = stationInRouteDAO.getScheduleFromAtoB(userRequirements.getFromStation(),
+        try {
+            scheduleList = stationInRouteDAO.getScheduleFromAtoB(userRequirements.getFromStation(),
                                                                                userRequirements.getToStation(),
                                                                                userRequirements.getDepartureTime(),
                                                                                userRequirements.getArrivalTime());
+        } catch (GetScheduleException ex) {
+            return new ResponseDTO(Constants.StatusOfExecutedService.error, ex.getMessage());
+        }
 
-        log.debug("Finish method scheduleFromAtoB(...)");
+        log.debug("Finish: scheduleFromAtoB()");
         return new ResponseDTO(Constants.StatusOfExecutedService.success, scheduleList);
     }
 
@@ -55,14 +57,25 @@ public class StationInRouteService {
      * @return Train schedule as list of ScheduleDTO objects.
      */
     public ResponseDTO scheduleForStation(RequestDTO reqObj) {
+        List<ScheduleDTO> scheduleList;
         StationInRouteDAO stationInRouteDAO = new StationInRouteDAO(entityManagerFactory);
 
         ScheduleDTO userRequirements = (ScheduleDTO) reqObj.getObject();
-        List<ScheduleDTO> scheduleList = stationInRouteDAO.getScheduleForStation(userRequirements);
+
+        try {
+            scheduleList = stationInRouteDAO.getScheduleForStation(userRequirements);
+        } catch (GetScheduleException ex) {
+            return new ResponseDTO(Constants.StatusOfExecutedService.error, ex.getMessage());
+        }
 
         return new ResponseDTO(Constants.StatusOfExecutedService.success, scheduleList);
     }
 
+    /**
+     * This service add in DB new route, defines stations that make up this route, set particular train to this route.
+     * @param reqObj - it contains as object list of ScheduleDTO instances - stations in new route.
+     * @return result of this service: state and explanatory message.
+     */
     public ResponseDTO addRoute(RequestDTO reqObj) {
         StationInRouteDAO stationInRouteDAO = new StationInRouteDAO(entityManagerFactory);
 
@@ -74,7 +87,7 @@ public class StationInRouteService {
             return new ResponseDTO(Constants.StatusOfExecutedService.error, e.getMessage());
         }
 
-        return new ResponseDTO(Constants.StatusOfExecutedService.success, "Новый маршрут добавлен успешно.");
+        return new ResponseDTO(Constants.StatusOfExecutedService.success, "Новый маршрут добавлен успешно");
     }
 }
 

@@ -3,7 +3,6 @@ package dao;
 import entity.Passenger;
 import entity.Station;
 import org.apache.log4j.Logger;
-import server.exceptions.AddStationException;
 import server.exceptions.EntityUpdateException;
 
 import javax.persistence.EntityManager;
@@ -25,7 +24,7 @@ public class StationDAO {
         entityManagerFactory = factory;
     }
 
-    public void addStation(String name) throws AddStationException{
+    public void addStation(String name) throws EntityUpdateException{
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         entityManager.getTransaction().begin();
 
@@ -35,7 +34,7 @@ public class StationDAO {
         try {
             entityManager.getTransaction().commit();
         } catch (Exception e) {
-            throw new AddStationException("Ошибка! Станция с таким названием уже существует.");
+            throw new EntityUpdateException("Ошибка! Станция с таким названием уже существует.");
         }
 
     }

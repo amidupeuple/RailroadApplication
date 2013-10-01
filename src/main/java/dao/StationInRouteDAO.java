@@ -1,17 +1,13 @@
 package dao;
 
-import dto.ResponseDTO;
 import dto.ScheduleDTO;
 import entity.Route;
 import entity.Station;
 import entity.StationInRoute;
 import entity.Train;
 import org.apache.log4j.Logger;
-import protocol.Constants;
-import server.exceptions.AddRouteException;
 import server.exceptions.EntityUpdateException;
-import server.exceptions.NoSuchStationNameException;
-import server.exceptions.NoSuchTrainException;
+import server.exceptions.GetScheduleException;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -117,10 +113,26 @@ public class StationInRouteDAO {
      * @param to - finish of time interval
      * @return list os schedule objects.
      */
-    public List<ScheduleDTO> getScheduleFromAtoB(String stationA, String stationB, Time from, Time to) {
-        log.debug("Start method getScheduleFromAtoB(...)");
+    public List<ScheduleDTO> getScheduleFromAtoB(String stationA, String stationB, Time from, Time to) throws GetScheduleException {
+        log.debug("Start: getScheduleFromAtoB()");
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         entityManager.getTransaction().begin();
+
+
+
+        //Check if desired stations exist in DB.
+        List<Station> stationABuf = entityManager.createQuery(
+                "select s from Station s where s.name = ?1"
+        ).setParameter(1, stationA).getResultList();
+
+        List<Station> stationBBuf = entityManager.createQuery(
+                "select s from Station s where s.name = ?1"
+        ).setParameter(1, stationB).getResultList();
+
+        if (stationABuf.isEmpty()) throw new GetScheduleException("Станция отправления отсутствует в базе данных");
+        else if (stationBBuf.isEmpty()) throw new GetScheduleException("Станция прибытия отсутствует в базе данных");
+
+
 
         //Result of this query is list of Object's arrays. Length of each array is 5 elements: 0 - train number,
         //1 - first station in route, 2 - last station in route, 3 - departure time from station A,
@@ -137,7 +149,7 @@ public class StationInRouteDAO {
                 "                           from StationInRoute sir6 " +
                 "                           where sir6.train.id = sir2.train.id) and " +
                 "      sir3.station.name = ?1 and sir4.station.name = ?2 and " +
-                "      sir3.departureTime > ?3 and sir3.departureTime < ?4"
+                "      sir3.departureTime > ?3 and sir4.arrivalTime < ?4"
         ).setParameter(1, stationA)
         .setParameter(2, stationB)
         .setParameter(3, from)
@@ -145,22 +157,25 @@ public class StationInRouteDAO {
         .getResultList();
 
         entityManager.getTransaction().commit();
-        log.debug("Data from DB successfully received");
+
+        int size = resultList.size();
+
+        if (size == 0) throw new GetScheduleException("Для задданных условий нет расписания поездов");
+
 
         // Packaging response list of objects based on data retrieved from data base.
-        int size = resultList.size();
         ArrayList<ScheduleDTO> scheduleList = new ArrayList<ScheduleDTO>(size);
         for (int i = 0; i < size; i++) {
             Object[] stationsBuf = resultList.get(i);
             scheduleList.add(new ScheduleDTO((Integer) stationsBuf[0],
-                    (String) stationsBuf[1],
-                    (String) stationsBuf[2],
+                    stationA,
+                    stationB,
                     (Time) stationsBuf[3],
                     (Time) stationsBuf[4],
                     (Integer) stationsBuf[5]));
         }
 
-        log.debug("Finish method getScheduleFromAtoB(...)");
+        log.debug("Finish: getScheduleFromAtoB()");
         return  scheduleList;
     }
 
@@ -169,10 +184,19 @@ public class StationInRouteDAO {
      * @param userRequirements - it contains name of station A.
      * @return - list of ScheduleDTO objects.
      */
-    public List<ScheduleDTO> getScheduleForStation(ScheduleDTO userRequirements) {
-        log.debug("Start method getScheduleForStation(...)");
+    public List<ScheduleDTO> getScheduleForStation(ScheduleDTO userRequirements) throws GetScheduleException {
+        log.debug("Start: getScheduleForStation()");
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         entityManager.getTransaction().begin();
+
+
+        //Check, if required station exists in DB.
+        List<Station> stationBuf = entityManager.createQuery(
+                "select s from Station s where s.name = ?1"
+        ).setParameter(1, userRequirements.getFromStation()).getResultList();
+
+        if (stationBuf.isEmpty()) throw new GetScheduleException("Выбранная станция отсутствует в базе данных");
+
 
         //This query returns list of Objects arrays, each array contains such elements: 0 - train number, 1 - first
         //station in route, 2 - last station in route, 3 - departure time from station A, 4 - arrival to station A,
@@ -193,6 +217,12 @@ public class StationInRouteDAO {
          .getResultList();
 
         int size = resultList.size();
+
+
+        //Check, if size == 0, then no schedule for given station.
+        if (size == 0) throw new GetScheduleException("Для запрошенной станции нет расписания");
+
+
         ArrayList<ScheduleDTO> scheduleList = new ArrayList<ScheduleDTO>(size);
         for (int i = 0; i < size; i++) {
             Object[] arr = resultList.get(i);
@@ -249,7 +279,7 @@ public class StationInRouteDAO {
 
         if (!bufForRouteId.isEmpty()) {
             log.debug("Exception: train already in route");
-            throw new AddRouteException("Указанный поезд уже задействован в другом маршруте!");
+            throw new EntityUpdateException("Указанный поезд уже задействован в другом маршруте");
         }
 
         //Get desired train for new route
@@ -259,7 +289,7 @@ public class StationInRouteDAO {
 
         if (trainBuf.isEmpty()) {
             log.debug("Exception: there is no train with mentioned number.");
-            throw new NoSuchTrainException("Поезда с указанным номером не существует");
+            throw new EntityUpdateException("Поезда с указанным номером не существует");
         }
         Train train = trainBuf.get(0);
 
@@ -277,7 +307,7 @@ public class StationInRouteDAO {
 
             if (buf.isEmpty()) {
                 log.debug("Exception: no such station name in Station table.");
-                throw new NoSuchStationNameException("Отсутсвует станция с названием" + stations.get(i).getFromStation());
+                throw new EntityUpdateException("Отсутсвует станция с названием " + stations.get(i).getFromStation());
             }
 
             StationInRoute sir = new StationInRoute(stations.get(i).getDepartureTime(),

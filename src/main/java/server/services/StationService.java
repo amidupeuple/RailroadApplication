@@ -6,7 +6,7 @@ import dto.ResponseDTO;
 import dto.ScheduleDTO;
 import org.apache.log4j.Logger;
 import protocol.Constants;
-import server.exceptions.AddStationException;
+import server.exceptions.EntityUpdateException;
 
 import javax.persistence.EntityManagerFactory;
 import java.util.List;
@@ -36,7 +36,7 @@ public class StationService {
 
         try {
             stationDAO.addStation(stationInfo.get(0).getFromStation());
-        } catch (AddStationException e) {
+        } catch (EntityUpdateException e) {
             log.debug("Exception: station with given name already exist");
             return new ResponseDTO(Constants.StatusOfExecutedService.error, e.getMessage());
         }

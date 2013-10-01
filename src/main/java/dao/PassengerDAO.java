@@ -4,6 +4,7 @@ import dto.PassengerDTO;
 import entity.Passenger;
 import dto.OrderDTO;
 import org.apache.log4j.Logger;
+import server.exceptions.NoPassengersException;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -112,7 +113,7 @@ public class PassengerDAO {
         }
     }
 
-    public List<PassengerDTO> getPassengersByTrain(int trainNumber) {
+    public List<PassengerDTO> getPassengersByTrain(int trainNumber) throws NoPassengersException {
         log.debug("Start: getPassengersByTrain()");
         ArrayList<PassengerDTO> passengers = new ArrayList<PassengerDTO>();
 
@@ -125,6 +126,8 @@ public class PassengerDAO {
         ).setParameter(1, trainNumber).getResultList();
 
         entityManager.getTransaction().commit();
+
+        if (bufPassengers.isEmpty()) throw new NoPassengersException("На указанном поезде пассажиров нет");
 
         for (int i = 0; i < bufPassengers.size(); i++) {
             PassengerDTO curPas = new PassengerDTO(bufPassengers.get(i).getFirstName(),

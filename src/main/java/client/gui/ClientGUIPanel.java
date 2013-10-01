@@ -14,6 +14,7 @@ import protocol.*;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.Time;
@@ -59,7 +60,6 @@ public class ClientGUIPanel extends javax.swing.JPanel {
         resetButton = new javax.swing.JButton();
         trainsTableModel = new TrainsTableModel();
 
-        //Initialization - hasn't yet been user's action - set widgets disabled
         disableScheduleForStationWidgets();
         disableTrainSearchWidgets();
 
@@ -145,31 +145,38 @@ public class ClientGUIPanel extends javax.swing.JPanel {
         buyTicketButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                JDialog dialog = new OrderDialog(null, true, trainsTableModel.getTrains(), rowNumber);
+                int row = trainsTable.getSelectedRow();
+
+                //If row isn't selected
+                if (row == -1) return;
+
+                JDialog dialog = new OrderDialog(null, true, trainsTableModel.getTrains(), row);
                 dialog.setLocationRelativeTo(null);
                 dialog.setVisible(true);
             }
         });
 
         trainsTable.setModel(trainsTableModel);
-        trainsTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (SwingUtilities.isLeftMouseButton(e)) {
-                    Point p = e.getPoint();
-                    rowNumber = trainsTable.rowAtPoint(p);
-                    ListSelectionModel model = trainsTable.getSelectionModel();
-                    model.setSelectionInterval(rowNumber, rowNumber);
-                }
-            }
-        });
-
+        trainsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        trainsTable.setDefaultRenderer( Object.class, new BorderLessTableCellRenderer() );
 
         jScrollPane1.setViewportView(trainsTable);
 
         jScrollPane2.setViewportView(jScrollPane1);
 
         resetButton.setText("Сбросить");
+        resetButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                trainsTableModel.setTrains(new ArrayList<ScheduleDTO>());
+                trainsTableModel.fireTableDataChanged();
+
+                fromStationTextField.setText("");
+                toStationTextField.setText("");
+
+                stationTextField.setText("");
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
@@ -245,29 +252,38 @@ public class ClientGUIPanel extends javax.swing.JPanel {
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 220, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(36, Short.MAX_VALUE))
         );
-    }// </editor-fold>//GEN-END:initComponents
+    }
 
+
+    /**
+     * Executes when "showButton" is pressed. It checks correctness of formed data to server - instance of
+     * ScheduleDTO, calls method to connect to server. After, displays in gui table received data from server.
+     */
     private void showButtonActionPerformed() {
+        //Clear gui table.
+        trainsTableModel.setTrains(new ArrayList<ScheduleDTO>());
+        trainsTableModel.fireTableDataChanged();
+
 
         //Check correctness of data prepared to send to server.
         if (mode == SelectedOption.scheduleForStation) {
             if (scheduleObject.getFromStation() == null || scheduleObject.getFromStation().equals("")) {
-                JOptionPane.showMessageDialog(null, "Некорректно введена станция. Повторите ввод.");
+                JOptionPane.showMessageDialog(null, "Некорректно введена станция. Повторите ввод");
                 return;
             }
         } else if (mode == SelectedOption.scheduleFromAtoB){
             if (scheduleObject.getFromStation() == null || scheduleObject.getFromStation().equals("")) {
-                JOptionPane.showMessageDialog(null, "Некорректно введена станция отправления. Повторите ввод.");
+                JOptionPane.showMessageDialog(null, "Некорректно введена станция отправления. Повторите ввод");
                 return;
             } else if (scheduleObject.getToStation() == null || scheduleObject.getToStation().equals("")) {
-                JOptionPane.showMessageDialog(null, "Некорректно введена станция прибытия. Повторите ввод.");
+                JOptionPane.showMessageDialog(null, "Некорректно введена станция прибытия. Повторите ввод");
                 return;
             } else if (scheduleObject.getDepartureTime().after(scheduleObject.getArrivalTime())) {
-                JOptionPane.showMessageDialog(null, "Некорректно введен временной интервал. Повторите ввод.");
+                JOptionPane.showMessageDialog(null, "Некорректно введен временной интервал. Повторите ввод");
                 return;
             }
         } else if (mode == SelectedOption.noSelection) {
-            JOptionPane.showMessageDialog(null, "Не выбрано ни одна из опций.");
+            JOptionPane.showMessageDialog(null, "Не выбрана ни одна из опций");
             return;
         }
 
@@ -280,9 +296,14 @@ public class ClientGUIPanel extends javax.swing.JPanel {
         //Sending data to the server and receiving response data.
         responseObject = ClientConnectionManager.connect(requestObject);
 
-        //Refresh contents of client's gui-table.
-        trainsTableModel.setTrains((ArrayList<ScheduleDTO>) responseObject.getObject());
-        trainsTableModel.fireTableDataChanged();
+        if (responseObject.getStatus() == Constants.StatusOfExecutedService.error) {
+            JOptionPane.showMessageDialog(null, responseObject.getObject());
+        } else if (responseObject.getStatus() == Constants.StatusOfExecutedService.success) {
+            //Refresh contents of client's gui-table.
+            trainsTableModel.setTrains((ArrayList<ScheduleDTO>) responseObject.getObject());
+            trainsTableModel.fireTableDataChanged();
+        }
+
     }
 
     private void setSpinnerModels() {
@@ -403,5 +424,34 @@ public class ClientGUIPanel extends javax.swing.JPanel {
     }
 
     private enum SelectedOption {noSelection, scheduleForStation, scheduleFromAtoB};
+
+
+    /**
+     * Class provides possibility when selecting table row don't highlight cell.
+     */
+    private static class BorderLessTableCellRenderer extends DefaultTableCellRenderer {
+
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public Component getTableCellRendererComponent(final JTable table,
+                                                       final Object value,
+                                                       final boolean isSelected,
+                                                       final boolean hasFocus,
+                                                       final int row,
+                                                       final int col) {
+
+            final boolean showFocusedCellBorder = false;
+
+            final Component c = super.getTableCellRendererComponent(table,
+                                                                    value,
+                                                                    isSelected,
+                                                                    showFocusedCellBorder && hasFocus,
+                                                                    row,
+                                                                    col);
+
+            return c;
+        }
+    }
 
 }

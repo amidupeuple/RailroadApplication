@@ -7,6 +7,7 @@ import dto.ResponseDTO;
 import dto.ScheduleDTO;
 import org.apache.log4j.Logger;
 import protocol.Constants;
+import server.exceptions.NoPassengersException;
 
 import javax.persistence.EntityManagerFactory;
 import java.util.List;
@@ -29,10 +30,15 @@ public class PassengerService {
 
     public ResponseDTO showPassengers(RequestDTO reqObj) {
         PassengerDAO passengerDAO = new PassengerDAO(entityManagerFactory);
+        List<PassengerDTO> passengers;
 
         int trainNumber = ((List<ScheduleDTO>)reqObj.getObject()).get(0).getNumber();
 
-        List<PassengerDTO> passengers = passengerDAO.getPassengersByTrain(trainNumber);
+        try {
+            passengers = passengerDAO.getPassengersByTrain(trainNumber);
+        } catch (NoPassengersException ex) {
+            return new ResponseDTO(Constants.StatusOfExecutedService.error, ex.getMessage());
+        }
 
         return new ResponseDTO(Constants.StatusOfExecutedService.success, passengers);
     }
