@@ -5,13 +5,7 @@ import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.Set;
 
-/**
- * Created with IntelliJ IDEA.
- * User: danya_000
- * Date: 9/22/13
- * Time: 1:46 AM
- * To change this template use File | Settings | File Templates.
- */
+
 @Entity
 @Table(name = "passenger")
 public class Passenger {

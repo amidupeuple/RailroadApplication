@@ -5,21 +5,19 @@ import dto.OrderDTO;
 import dto.RequestDTO;
 import dto.ResponseDTO;
 import dto.ScheduleDTO;
+import client.exception.ConnectToServerException;
 import org.apache.log4j.Logger;
-import protocol.Constants;
+import common.Constants;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
-import java.sql.Time;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-
-import static protocol.Constants.POINT_OF_REFERENCE;
 
 public class OrderDialog extends javax.swing.JDialog {
 
@@ -212,14 +210,18 @@ public class OrderDialog extends javax.swing.JDialog {
 
         log.debug("Request object is prepared -> send data to server.");
 
-        response = ClientConnectionManager.connect(request);
+        try {
+            response = ClientConnectionManager.connect(request);
+        } catch (ConnectToServerException ex) {
+            JOptionPane.showMessageDialog(null, ex.getMessage());
+        }
 
         log.debug("Response object from server is obtained.");
 
         if (response.getStatus() == Constants.StatusOfExecutedService.success)
             infoTextPane.setText(((String) response.getObject()));
         else if (response.getStatus() == Constants.StatusOfExecutedService.error)
-            infoTextPane.setText(((Exception) response.getObject()).getMessage());
+            infoTextPane.setText((String) response.getObject());
 
     }
 

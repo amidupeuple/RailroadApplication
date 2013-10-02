@@ -2,13 +2,7 @@ package entity;
 
 import javax.persistence.*;
 
-/**
- * Created with IntelliJ IDEA.
- * User: danya_000
- * Date: 9/22/13
- * Time: 1:31 PM
- * To change this template use File | Settings | File Templates.
- */
+
 @Entity
 @Table(name = "ticket")
 public class Ticket {

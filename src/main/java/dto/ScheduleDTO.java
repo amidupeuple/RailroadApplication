@@ -4,6 +4,9 @@ import java.io.Serializable;
 import java.sql.Time;
 import java.sql.Timestamp;
 
+/**
+ * DTO to transfer information about schedules.
+ */
 public class ScheduleDTO implements Serializable{
     int number;
     String fromStation;
@@ -61,12 +64,6 @@ public class ScheduleDTO implements Serializable{
     }
 
     public ScheduleDTO() {
-        /*number = 34;
-        fromStation = "Псков";
-        toStation = "Москва";
-        departureTime = new Timestamp(Constants.POINT_OF_REFERENCE+12*Constants.HOUR);
-        arrivalTime = new Timestamp(Constants.POINT_OF_REFERENCE+12*Constants.HOUR + 13*Constants.MINUTE);;
-        ticketsAmount = 123;*/
     }
 
     public ScheduleDTO(int numb,

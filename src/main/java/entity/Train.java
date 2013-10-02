@@ -3,13 +3,7 @@ package entity;
 import javax.persistence.*;
 import java.util.Set;
 
-/**
- * Created with IntelliJ IDEA.
- * User: danya_000
- * Date: 9/21/13
- * Time: 1:24 AM
- * To change this template use File | Settings | File Templates.
- */
+
 @Entity
 @Table(name = "train")
 public class Train {

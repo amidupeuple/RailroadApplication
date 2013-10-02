@@ -5,17 +5,16 @@ import dto.RequestDTO;
 import dto.ResponseDTO;
 import dto.ScheduleDTO;
 
-import static protocol.Constants.HOUR;
-import static protocol.Constants.MINUTE;
-import static protocol.Constants.POINT_OF_REFERENCE;
+import static common.Constants.HOUR;
+import static common.Constants.MINUTE;
+import static common.Constants.POINT_OF_REFERENCE;
 
-import protocol.*;
+import client.exception.ConnectToServerException;
+import common.*;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.table.DefaultTableCellRenderer;
-import java.awt.*;
 import java.awt.event.*;
 import java.sql.Time;
 import java.util.ArrayList;
@@ -294,7 +293,12 @@ public class ClientGUIPanel extends javax.swing.JPanel {
         requestObject.setObject(scheduleObject);
 
         //Sending data to the server and receiving response data.
-        responseObject = ClientConnectionManager.connect(requestObject);
+        try {
+            responseObject = ClientConnectionManager.connect(requestObject);
+        } catch (ConnectToServerException ex) {
+            JOptionPane.showMessageDialog(null, ex.getMessage());
+            return;
+        }
 
         if (responseObject.getStatus() == Constants.StatusOfExecutedService.error) {
             JOptionPane.showMessageDialog(null, responseObject.getObject());
@@ -426,32 +430,6 @@ public class ClientGUIPanel extends javax.swing.JPanel {
     private enum SelectedOption {noSelection, scheduleForStation, scheduleFromAtoB};
 
 
-    /**
-     * Class provides possibility when selecting table row don't highlight cell.
-     */
-    private static class BorderLessTableCellRenderer extends DefaultTableCellRenderer {
 
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public Component getTableCellRendererComponent(final JTable table,
-                                                       final Object value,
-                                                       final boolean isSelected,
-                                                       final boolean hasFocus,
-                                                       final int row,
-                                                       final int col) {
-
-            final boolean showFocusedCellBorder = false;
-
-            final Component c = super.getTableCellRendererComponent(table,
-                                                                    value,
-                                                                    isSelected,
-                                                                    showFocusedCellBorder && hasFocus,
-                                                                    row,
-                                                                    col);
-
-            return c;
-        }
-    }
 
 }

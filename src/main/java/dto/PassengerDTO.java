@@ -4,11 +4,7 @@ import java.io.Serializable;
 import java.sql.Date;
 
 /**
- * Created with IntelliJ IDEA.
- * User: danya_000
- * Date: 9/28/13
- * Time: 8:56 PM
- * To change this template use File | Settings | File Templates.
+ * DTO to transfer information about passenger on particular train.
  */
 public class PassengerDTO implements Serializable{
     private String firstName;

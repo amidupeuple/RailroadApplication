@@ -8,11 +8,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 
 /**
- * Created with IntelliJ IDEA.
- * User: danya_000
- * Date: 9/26/13
- * Time: 10:18 PM
- * To change this template use File | Settings | File Templates.
+ * DAO for Ticket entity.
  */
 public class TicketDAO {
     private EntityManagerFactory entityManagerFactory;

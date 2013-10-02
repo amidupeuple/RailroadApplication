@@ -1,8 +1,6 @@
-package protocol;
+package common;
 
-/**
- * It contains some auxiliary enums for protocol's objects.
- */
+
 public class Constants {
     //Possible types of clients
     public enum ClientType {user, admin};

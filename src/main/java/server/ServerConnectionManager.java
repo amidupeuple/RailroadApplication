@@ -2,6 +2,7 @@ package server;
 
 import dto.RequestDTO;
 import dto.ResponseDTO;
+import org.apache.log4j.Logger;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -14,17 +15,21 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- * This class defines non-blocking db - it can handles many connections from client in one thread. Except for
+ * This class defines non-blocking server - it can handle many connections from client in one thread. Except for
  * lifecycle support of connections with clients, this class calls appropriate service by clint's request. Service
  * receive as a parameter request from client and return required data for client.
  */
 public class ServerConnectionManager {
+    private static final Logger log = Logger.getLogger(ServerConnectionManager.class);
+
     static int SERVER_PORT = 8000;
 
     /**
      * Manage connections with clients
      */
     public static void connect() {
+        log.debug("Start: connect()");
+
         ServerSocketChannel server = null;
         Selector selector = null;
 
@@ -35,8 +40,10 @@ public class ServerConnectionManager {
             selector = Selector.open();
             server.register(selector, SelectionKey.OP_ACCEPT);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Exception: " + e);
         }
+
+        log.debug("ServerSocketChannel is opened");
 
         while (true) {
             int readyChannels = 0;
@@ -44,7 +51,7 @@ public class ServerConnectionManager {
             try {
                 readyChannels = selector.select(5000);
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("Exception: " + e);
             }
 
             if (readyChannels == 0) continue;
@@ -57,14 +64,14 @@ public class ServerConnectionManager {
                 iterator.remove();
 
                 if (key.isAcceptable()) {
-                    SocketChannel client = null;
+                    SocketChannel client;
 
                     try {
                         client = server.accept();
                         client.configureBlocking(false);
                         client.register(selector, SelectionKey.OP_READ);
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        log.error("Can't accept incoming connection: " + e);
                     }
 
                     continue;
@@ -80,10 +87,12 @@ public class ServerConnectionManager {
                         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(buf.array());
                         ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
                         RequestDTO reqObj = (RequestDTO) objectInputStream.readObject();
-                        System.out.println("Data from client received");
+                        log.debug("Data from client received");
 
+                        log.debug("Start required service");
                         //Analyse and execute needed service
                         ResponseDTO respObject = Service.execute(reqObj);
+                        log.debug("Finish required service");
 
                         //Send data to client
                         try {
@@ -93,7 +102,7 @@ public class ServerConnectionManager {
                             objectOutputStream.flush();
                             client.write(ByteBuffer.wrap(byteArrayOutputStream.toByteArray()));
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            log.error(e);
                         }
 
                     } catch (Exception e) {

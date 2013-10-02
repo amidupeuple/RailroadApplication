@@ -1,11 +1,11 @@
 package dto;
 
-import protocol.Constants;
+import common.Constants;
 
 import java.io.Serializable;
 
 /**
- * This is response from db to client. It contains status of executed requested service and result of
+ * This is response from server to client. It contains status of executed requested service and result of
  * this service.
  */
 public class ResponseDTO implements Serializable{
@@ -26,5 +26,13 @@ public class ResponseDTO implements Serializable{
 
     public Object getObject() {
         return object;
+    }
+
+    public void setStatus(Constants.StatusOfExecutedService status) {
+        this.status = status;
+    }
+
+    public void setObject(Object object) {
+        this.object = object;
     }
 }

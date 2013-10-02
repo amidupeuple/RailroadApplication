@@ -2,6 +2,7 @@ package dao;
 
 import dto.ScheduleDTO;
 import entity.Train;
+import org.apache.log4j.Logger;
 import server.exceptions.EntityUpdateException;
 
 import javax.persistence.EntityManager;
@@ -12,13 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created with IntelliJ IDEA.
- * User: danya_000
- * Date: 9/24/13
- * Time: 1:35 PM
- * To change this template use File | Settings | File Templates.
+ * DAO for Train entity.
  */
 public class TrainDAO {
+    private static final Logger log = Logger.getLogger(TrainDAO.class);
+
     private EntityManagerFactory entityManagerFactory;
 
     public TrainDAO(EntityManagerFactory factory) {
@@ -31,6 +30,8 @@ public class TrainDAO {
      * @return amount of vacancies int train.
      */
     public int getVacanciesInTrain(int numb) {
+        log.debug("Start: getVacanciesInTrain()");
+
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         entityManager.getTransaction().begin();
 
@@ -42,10 +43,13 @@ public class TrainDAO {
 
         entityManager.getTransaction().commit();
 
+        log.debug("Finish: getVacanciesInTrain()");
         return vacancies.get(0);
     }
 
     public Train getTrain(int number) {
+        log.debug("Start: getTrain()");
+
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         entityManager.getTransaction().begin();
 
@@ -56,6 +60,7 @@ public class TrainDAO {
 
         entityManager.getTransaction().commit();
 
+        log.debug("Finish: getTrain()");
         return buf.get(0);
     }
 
@@ -73,7 +78,9 @@ public class TrainDAO {
         entityManager.getTransaction().commit();
     }
 
-    public void addTrain(int number, int vacancies) throws EntityUpdateException{
+    public boolean addTrain(int number, int vacancies) throws EntityUpdateException{
+        log.debug("Start: addTrain()");
+
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         entityManager.getTransaction().begin();
 
@@ -83,8 +90,12 @@ public class TrainDAO {
         try {
             entityManager.getTransaction().commit();
         } catch (Exception e) {
-            throw new EntityUpdateException("Ошибка! Такой поезд уже существует.");
+            log.warn("Such train already exists");
+            throw new EntityUpdateException("Ошибка! Такой поезд уже существует");
         }
+
+        log.debug("Finish: addTrain()");
+        return true;
     }
 
     public ArrayList<ScheduleDTO> getAllTrains() {

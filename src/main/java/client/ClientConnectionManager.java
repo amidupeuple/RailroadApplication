@@ -2,31 +2,29 @@ package client;
 
 import dto.RequestDTO;
 import dto.ResponseDTO;
-import dto.ScheduleDTO;
-import protocol.*;
-
-import static protocol.Constants.HOUR;
+import client.exception.ConnectToServerException;
+import org.apache.log4j.Logger;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.sql.Time;
 
 /**
- * This class defines how client manages the connection with db: establishing connection with db, send request
- * for some data, receive response from db with required data, close connection.
+ * This class provides communication with server.
  */
 public class ClientConnectionManager {
+    private static final Logger log = Logger.getLogger(ClientConnectionManager.class);
+
     static int SERVER_PORT = 8000;
 
     /**
-     * Method set connection with db to send and receive some data.
-     * @param data - data to send to db
-     * @throws IOException
-     * @throws InterruptedException
+     * Method set connection with server to send and receive some data.
+     * @param request - data to send to server
+     * @return - response from server - state of executed service and some data, depending on service
+     * @throws ConnectToServerException - if client can't make a connection with server
      */
-    public static ResponseDTO connect(RequestDTO data) {
+    public static ResponseDTO connect(RequestDTO request) throws ConnectToServerException {
         SocketChannel channel = null;
         ObjectOutputStream outputStream = null;
         ResponseDTO respObj = null;
@@ -34,14 +32,19 @@ public class ClientConnectionManager {
         try {
             channel = SocketChannel.open();
             channel.connect(new InetSocketAddress("localhost", SERVER_PORT));
+
+            log.debug("Connection to server has been establishing");
+
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-            objectOutputStream.writeObject(data);
+            objectOutputStream.writeObject(request);
             objectOutputStream.flush();
             channel.write(ByteBuffer.wrap(byteArrayOutputStream.toByteArray()));
-            System.out.println("sent");
+
+            log.debug("Request to server is made");
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Exception: sending data to server");
+            throw new ConnectToServerException("Невозможно подключиться к серверу, повторите соединение позже");
         }
 
         try {
@@ -50,9 +53,11 @@ public class ClientConnectionManager {
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(buf.array());
             ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
             respObj = (ResponseDTO) objectInputStream.readObject();
-            System.out.println("received");
+
+            log.debug("Server responce is received");
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Exception: receiving data from server");
+            throw new ConnectToServerException("Невозможно подключиться к серверу, повторите соединение позже");
         }
 
         try {
@@ -62,16 +67,5 @@ public class ClientConnectionManager {
         } finally {
             return respObj;
         }
-    }
-
-    public static void main(String[] args) {
-        RequestDTO data = new RequestDTO(Constants.ClientService.getScheduleFromAtoB,
-                                               new ScheduleDTO(123,
-                                                                "Псков",
-                                                                "Москва",
-                                                                new Time(HOUR),
-                                                                new Time(23*HOUR),
-                                                                0));
-        connect(data);
     }
 }

@@ -2,13 +2,14 @@ package client.gui;
 
 import client.ClientConnectionManager;
 import dto.*;
-import protocol.Constants;
+import client.exception.ConnectToServerException;
+import org.apache.log4j.Logger;
+import common.Constants;
 import server.exceptions.EntityUpdateException;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.*;
 import java.awt.event.*;
 import java.sql.Time;
 import java.text.DateFormat;
@@ -20,17 +21,87 @@ import java.util.Date;
 import java.util.List;
 import java.util.regex.PatternSyntaxException;
 
-import static protocol.Constants.HOUR;
-import static protocol.Constants.MINUTE;
-import static protocol.Constants.POINT_OF_REFERENCE;
+import static common.Constants.HOUR;
+import static common.Constants.MINUTE;
+import static common.Constants.POINT_OF_REFERENCE;
 
 public class AdministratorGUIPanel extends javax.swing.JPanel {
 
-    public AdministratorGUIPanel(JFrame f) {
+    private static final Logger log = Logger.getLogger(AdministratorGUIPanel.class);
+
+    private javax.swing.JRadioButton addRouteRadioButton;
+    private javax.swing.JRadioButton addStationRadioButton;
+    private javax.swing.JTextField addTrainNumberTextField;
+    private javax.swing.JRadioButton addTrainRadioButton;
+    private javax.swing.JLabel capacityLabel;
+    private javax.swing.JTextField capacityTextField;
+    private javax.swing.JLabel dateOfBirthLabel;
+    private javax.swing.JSpinner dateOfBirthSpinner;
+    private javax.swing.JLabel firstNameLabel;
+    private javax.swing.JTextField firstNameTextField;
+    private javax.swing.JLabel fromLabel;
+    private javax.swing.JTextField fromTextField;
+    private javax.swing.JSpinner fromTimeSpinner;
+    private javax.swing.JTextArea inputTextArea;
+    private javax.swing.JLabel inputTrainNumberLabel;
+    private javax.swing.JLabel intervalLabel;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JTable passengersTable;
+    private javax.swing.JTable trainsTable;
+    private javax.swing.JTable saleTrainsTable;
+    private javax.swing.ButtonGroup optionsButtonGroup;
+    private javax.swing.JButton registerButton;
+    private javax.swing.JButton saleShowButton;
+    private javax.swing.JScrollPane scrollForSaleTrainsTable;
+    private javax.swing.JButton saveButton;
+    private javax.swing.JLabel secondNameLabel;
+    private javax.swing.JTextField secondNameTextField;
+    private javax.swing.JButton showTrainsButton;
+    private javax.swing.JLabel stationNameLabel;
+    private javax.swing.JTextField stationNameTextField;
+    private javax.swing.JTabbedPane tabbedPane;
+    private javax.swing.JLabel toLabel;
+    private javax.swing.JTextField toTextField;
+    private javax.swing.JSpinner toTimeSpinner;
+    private javax.swing.JLabel trainNumberLabel;
+    private javax.swing.JTextField trainNumberToViewPassengersTextField;
+
+    private PassengersTableModel passengersTableModel;
+    private TrainsTableModel trainsTableModel;
+    private TrainsTableModel saleTrainsTableModel;
+
+    private List<ScheduleDTO> dataForUpdateList;    //Instances of ScheduleDTO will fill the list depending on the
+                                                    //selected option. If administrator will choose "add train" option,
+                                                    //this list will consist of one ScheduleDTO instance, in which
+                                                    //will be specified parameters of new train (number and vacancies).
+                                                    //If administrator will choose "add station", in the list also will
+                                                    //be one element (only with name of station). And if "add route"
+                                                    //option - list will consist of elements each of them represents
+                                                    //station in route (name, time of arrival and departure).
+
+    private ScheduleDTO dataForUpdate;              //In this variable we will put some information when one of the
+                                                    //"add new entity" option is selected. Which information depends on
+                                                    //what option is selected. Or when we need receive schedule
+                                                    //to sale ticket.
+
+    private String routeInfo;                       //This string contains information about route entered by admin
+                                                    //in appropriate text pane.
+
+    private RequestDTO request;
+
+    private OrderDTO order;
+
+    public AdministratorGUIPanel() {
         dataForUpdateList = new ArrayList<ScheduleDTO>();
         dataForUpdate = new ScheduleDTO();
         request = new RequestDTO();
-        frame = f;
         order = new OrderDTO();
         initComponents();
 
@@ -40,6 +111,7 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
     }
 
     private void initComponents() {
+        log.debug("Start: initComponents()");
 
         optionsButtonGroup = new javax.swing.ButtonGroup();
         tabbedPane = new javax.swing.JTabbedPane();
@@ -58,7 +130,7 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
         stationNameTextField = new javax.swing.JTextField();
         jPanel2 = new javax.swing.JPanel();
         inputTrainNumberLabel = new javax.swing.JLabel();
-        inputTrainNumberTextField = new javax.swing.JTextField();
+        trainNumberToViewPassengersTextField = new javax.swing.JTextField();
         jScrollPane2 = new javax.swing.JScrollPane();
         passengersTable = new javax.swing.JTable();
         jPanel3 = new javax.swing.JPanel();
@@ -74,7 +146,7 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
         fromTimeSpinner = new javax.swing.JSpinner();
         jLabel1 = new javax.swing.JLabel();
         toTimeSpinner = new javax.swing.JSpinner();
-        saleTicketTrainsTable = new javax.swing.JScrollPane();
+        scrollForSaleTrainsTable = new javax.swing.JScrollPane();
         saleTrainsTable = new javax.swing.JTable();
         firstNameLabel = new javax.swing.JLabel();
         firstNameTextField = new javax.swing.JTextField();
@@ -142,44 +214,14 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
         jScrollPane1.setViewportView(inputTextArea);
 
         saveButton.setText("Сохранить");
+
         saveButton.addActionListener(new ActionListener() {
+
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (addTrainRadioButton.isSelected()) {
-                    if (dataForUpdate.getNumber() <= 0 || dataForUpdate.getTicketsAmount() <= 0) {
-                        JOptionPane.showMessageDialog(null, "Некорректно введена информация о добавляемом поезде");
-                        return;
-                    }
 
-                    dataForUpdateList.add(dataForUpdate);
-                    request.setService(Constants.ClientService.addTrain);
-                } else if (addStationRadioButton.isSelected()) {
-                    if (dataForUpdate.getFromStation() == null || dataForUpdate.getFromStation().equals("")) {
-                        JOptionPane.showMessageDialog(null, "Некорректно введена информация о добавляемй станции");
-                        return;
-                    }
+                saveButtonActionPerformed();
 
-                    dataForUpdateList.add(dataForUpdate);
-                    request.setService(Constants.ClientService.addStation);
-                } else if (addRouteRadioButton.isSelected()) {
-                    request.setService(Constants.ClientService.addRoute);
-                    try {
-                        routeInfoHandler(routeInfo);
-                    } catch (EntityUpdateException ex) {
-                        JOptionPane.showMessageDialog(null, ex.getMessage());
-                    }
-                } else JOptionPane.showMessageDialog(null, "Не выбрана ни одна из опций");
-
-                request.setObject(dataForUpdateList);
-
-                if (!dataForUpdateList.isEmpty()) {
-                    ResponseDTO responce = ClientConnectionManager.connect(request);
-
-                    JOptionPane.showMessageDialog(null, (String) responce.getObject());
-
-                    dataForUpdateList.clear();
-                    clearWidgetsContent();
-                }
             }
         });
 
@@ -306,39 +348,19 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
 
         inputTrainNumberLabel.setText("Введите номер поезда:");
 
-        inputTrainNumberTextField.addActionListener(new ActionListener() {
+        trainNumberToViewPassengersTextField.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int trainNumber = 0;
 
-                try {
-                    trainNumber = Integer.parseInt(inputTrainNumberTextField.getText());
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(null, "Некорректно введен номер поезда");
-                    return;
-                }
-                dataForUpdate.setNumber(trainNumber);
-                dataForUpdateList.add(dataForUpdate);
-
-                request.setService(Constants.ClientService.viewPassangers);
-                request.setObject(dataForUpdateList);
-
-                ResponseDTO responce = ClientConnectionManager.connect(request);
-
-                if (responce.getStatus() == Constants.StatusOfExecutedService.success) {
-                    passengersTableModel.setPassengers((List<PassengerDTO>) responce.getObject());
-                    passengersTableModel.fireTableDataChanged();
-                } else if (responce.getStatus() == Constants.StatusOfExecutedService.error) {
-                    passengersTableModel.setPassengers(new ArrayList<PassengerDTO>());
-                    passengersTableModel.fireTableDataChanged();
-                    JOptionPane.showMessageDialog(null, "На указанный поезд пассажиров нет");
-                }
+                trainNumberToViewPassengersTextFieldActionPerformed();
 
             }
         });
 
 
         passengersTable.setModel(passengersTableModel);
+        passengersTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        passengersTable.setDefaultRenderer(Object.class, new BorderLessTableCellRenderer());
         jScrollPane2.setViewportView(passengersTable);
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
@@ -352,7 +374,7 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
                                         .addGroup(jPanel2Layout.createSequentialGroup()
                                                 .addComponent(inputTrainNumberLabel)
                                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                                .addComponent(inputTrainNumberTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                .addComponent(trainNumberToViewPassengersTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
                                                 .addGap(0, 0, Short.MAX_VALUE)))
                                 .addContainerGap())
         );
@@ -362,7 +384,7 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
                                 .addContainerGap()
                                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                                         .addComponent(inputTrainNumberLabel)
-                                        .addComponent(inputTrainNumberTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                        .addComponent(trainNumberToViewPassengersTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addGap(18, 18, 18)
                                 .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 325, Short.MAX_VALUE)
                                 .addGap(70, 70, 70))
@@ -374,30 +396,16 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
         showTrainsButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                ResponseDTO responce = ClientConnectionManager.connect(new RequestDTO(Constants.ClientService.viewTrains,
-                        null));
-                if (responce.getStatus() == Constants.StatusOfExecutedService.success) {
-                    trainsTableModel.setTrains((ArrayList<ScheduleDTO>) responce.getObject());
-                    trainsTableModel.fireTableDataChanged();
-                } else if (responce.getStatus() == Constants.StatusOfExecutedService.error) {
-                    JOptionPane.showMessageDialog(null, (String) responce.getObject());
-                }
+
+                showTrainsButtonActionPerformed();
+
             }
         });
 
         trainsTable.setModel(trainsTableModel);
+        trainsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        trainsTable.setDefaultRenderer(Object.class, new BorderLessTableCellRenderer());
         jScrollPane3.setViewportView(trainsTable);
-        trainsTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (SwingUtilities.isLeftMouseButton(e)) {
-                    Point p = e.getPoint();
-                    rowNumber = trainsTable.rowAtPoint(p);
-                    ListSelectionModel model = trainsTable.getSelectionModel();
-                    model.setSelectionInterval(rowNumber, rowNumber);
-                }
-            }
-        });
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -471,43 +479,18 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
         });
 
         saleTrainsTable.setModel(saleTrainsTableModel);
-        saleTrainsTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (SwingUtilities.isLeftMouseButton(e)) {
-                    Point p = e.getPoint();
-                    rowNumber = saleTrainsTable.rowAtPoint(p);
-                    ListSelectionModel model = saleTrainsTable.getSelectionModel();
-                    model.setSelectionInterval(rowNumber, rowNumber);
-                }
-            }
-        });
-        saleTicketTrainsTable.setViewportView(saleTrainsTable);
+        saleTrainsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        saleTrainsTable.setDefaultRenderer( Object.class, new BorderLessTableCellRenderer() );
+
+        scrollForSaleTrainsTable.setViewportView(saleTrainsTable);
 
         saleShowButton.setText("Показать ");
         saleShowButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (dataForUpdate.getFromStation() == null || dataForUpdate.getFromStation().equals("")) {
-                    JOptionPane.showMessageDialog(null, "Некорректно введена станция отправления. Повторите ввод.");
-                    return;
-                } else if (dataForUpdate.getToStation() == null || dataForUpdate.getToStation().equals("")) {
-                    JOptionPane.showMessageDialog(null, "Некорректно введена станция прибытия. Повторите ввод.");
-                    return;
-                } else if (dataForUpdate.getDepartureTime().after(dataForUpdate.getArrivalTime())) {
-                    JOptionPane.showMessageDialog(null, "Некорректно введен временной интервал. Повторите ввод.");
-                    return;
-                }
 
-                request.setService(Constants.ClientService.getScheduleFromAtoB);
-                request.setObject(dataForUpdate);
+                saleShowButtonActionPerformed();
 
-                ResponseDTO responce = ClientConnectionManager.connect(request);
-
-                if (responce.getStatus() == Constants.StatusOfExecutedService.success) {
-                    saleTrainsTableModel.setTrains((ArrayList<ScheduleDTO>) responce.getObject());
-                    saleTrainsTableModel.fireTableDataChanged();
-                }
             }
         });
 
@@ -554,34 +537,9 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
         registerButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                ArrayList<ScheduleDTO> schedule = saleTrainsTableModel.getTrains();
 
-                request.setService(Constants.ClientService.buyTicket);
+                registerButtonActionPerformed();
 
-                if (!schedule.isEmpty()) {
-                    order.setTrainNumber(schedule.get(rowNumber).getNumber());
-                    order.setFromStation(schedule.get(rowNumber).getFromStation());
-                }
-
-                if (order.getFirstName() == null || order.getFirstName() == "") {
-                    JOptionPane.showMessageDialog(null, "Некорректно введено имя. Повторите ввод.");
-                    return;
-                } else if (order.getSecondName() == null || order.getSecondName() == "") {
-                    JOptionPane.showMessageDialog(null, "Некорректно введена фамилия. Повторите ввод.");
-                    return;
-                }
-
-                request.setObject(order);
-
-                ResponseDTO response = ClientConnectionManager.connect(request);
-
-                if (response.getStatus() == Constants.StatusOfExecutedService.success) {
-                    JOptionPane.showMessageDialog(null, "Пассажир успешно зарегистрирован");
-                } else if (response.getStatus() == Constants.StatusOfExecutedService.error) {
-                    JOptionPane.showMessageDialog(null, ((Exception)response.getObject()).getMessage());
-                }
-
-                clearSaleWidgetsContent();
             }
         });
 
@@ -593,7 +551,7 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(saleTicketTrainsTable)
+                    .addComponent(scrollForSaleTrainsTable)
                     .addGroup(jPanel4Layout.createSequentialGroup()
                         .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel4Layout.createSequentialGroup()
@@ -651,7 +609,7 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
                 .addGap(18, 18, 18)
                 .addComponent(saleShowButton)
                 .addGap(37, 37, 37)
-                .addComponent(saleTicketTrainsTable, javax.swing.GroupLayout.PREFERRED_SIZE, 139, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(scrollForSaleTrainsTable, javax.swing.GroupLayout.PREFERRED_SIZE, 139, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(37, 37, 37)
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(firstNameLabel)
@@ -687,6 +645,8 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
      * @throws EntityUpdateException - exception of this type about incorrect entered route information.
      */
     private void routeInfoHandler(String info) throws EntityUpdateException {
+        log.debug("Start: routeInfoHandler()");
+
         String[] arrOfStations = null;
         DateFormat formatter = new SimpleDateFormat("HH:mm");
         Date tmpDateDep = null;
@@ -694,12 +654,14 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
         int trainNumber = 0;
 
         if (info == null) {
+            log.warn("Exception: Incorrect input of route");
             throw new EntityUpdateException("Некорректно введен маршрут");
         }
 
         try {
             arrOfStations = info.split("\n");
         } catch (PatternSyntaxException e) {
+            log.warn("Exception: Incorrect input of route");
             throw new EntityUpdateException("Некорректно введен маршрут");
         }
 
@@ -708,11 +670,15 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
         try {
             trainNumber = Integer.parseInt(arrOfStations[0]);
         } catch (NumberFormatException e) {
+            log.warn("Exception: Incorrect input of train number");
             throw new EntityUpdateException("Некорректно введен номер поезда");
         }
 
-        if (arrOfStations.length < 3) throw new EntityUpdateException("Число станций в маршруте должно быть не " +
-                                                                      "меньше двух");
+        if (arrOfStations.length < 3) {
+            log.warn("Exception: There are should ne at least two stations in route");
+            throw new EntityUpdateException("Число станций в маршруте должно быть не " +
+                    "меньше двух");
+        }
 
         for (int i = 1; i < arrOfStations.length; i++) {
             String[] stationInfo = null;
@@ -720,6 +686,7 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
             try {
                 stationInfo = arrOfStations[i].split("_");
             } catch (PatternSyntaxException ex) {
+                log.warn("Exception: Incorrect input of station info");
                 throw new EntityUpdateException("Некорректно введена информация по станции");
             }
 
@@ -727,8 +694,10 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
             stationData.setFromStation(stationInfo[0]);
 
             if ((i == 1 || i == arrOfStations.length-1) && stationInfo.length != 2) {
+                log.warn("Exception: Incorrect input of station info");
                 throw new EntityUpdateException("Некорректно введена информация по станции " + stationInfo[0]);
             } else if ((i > i && i < arrOfStations.length-1) && stationInfo.length != 3) {
+                log.warn("Exception: Incorrect input of station info");
                 throw new EntityUpdateException("Некорректно введена информация по станции " + stationInfo[0]);
             }
 
@@ -746,6 +715,7 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
                 }
 
             } catch (ParseException e1) {
+                log.warn("Exception: Incorrect input of time");
                 throw new EntityUpdateException("Некорректно введено время");
             }
 
@@ -759,6 +729,8 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
         }
 
         dataForUpdateList.get(0).setNumber(trainNumber);
+
+        log.error("Finish: routeInfoHandler()");
     }
 
     private void setSpinnerModels() {
@@ -811,79 +783,185 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
         inputTextArea.setEnabled(true);
     }
 
+    /**
+     * When save button is pressed.
+     */
+    private void saveButtonActionPerformed() {
+        if (addTrainRadioButton.isSelected()) {
+            if (dataForUpdate.getNumber() <= 0 || dataForUpdate.getTicketsAmount() <= 0) {
+                JOptionPane.showMessageDialog(null, "Некорректно введена информация о добавляемом поезде");
+                return;
+            }
 
-    private javax.swing.JRadioButton addRouteRadioButton;
-    private javax.swing.JRadioButton addStationRadioButton;
-    private javax.swing.JTextField addTrainNumberTextField;
-    private javax.swing.JRadioButton addTrainRadioButton;
-    private javax.swing.JLabel capacityLabel;
-    private javax.swing.JTextField capacityTextField;
-    private javax.swing.JLabel dateOfBirthLabel;
-    private javax.swing.JSpinner dateOfBirthSpinner;
-    private javax.swing.JLabel firstNameLabel;
-    private javax.swing.JTextField firstNameTextField;
-    private javax.swing.JLabel fromLabel;
-    private javax.swing.JTextField fromTextField;
-    private javax.swing.JSpinner fromTimeSpinner;
-    private javax.swing.JTextArea inputTextArea;
-    private javax.swing.JLabel inputTrainNumberLabel;
-    private javax.swing.JLabel intervalLabel;
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel2;
-    private javax.swing.JPanel jPanel3;
-    private javax.swing.JPanel jPanel4;
-    private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JScrollPane jScrollPane3;
-    private javax.swing.JTable passengersTable;
-    private javax.swing.JTable trainsTable;
-    private javax.swing.JTable saleTrainsTable;
-    private javax.swing.ButtonGroup optionsButtonGroup;
-    private javax.swing.JButton registerButton;
-    private javax.swing.JButton saleShowButton;
-    private javax.swing.JScrollPane saleTicketTrainsTable;
-    private javax.swing.JButton saveButton;
-    private javax.swing.JLabel secondNameLabel;
-    private javax.swing.JTextField secondNameTextField;
-    private javax.swing.JButton showTrainsButton;
-    private javax.swing.JLabel stationNameLabel;
-    private javax.swing.JTextField stationNameTextField;
-    private javax.swing.JTabbedPane tabbedPane;
-    private javax.swing.JLabel toLabel;
-    private javax.swing.JTextField toTextField;
-    private javax.swing.JSpinner toTimeSpinner;
-    private javax.swing.JLabel trainNumberLabel;
-    private javax.swing.JTextField inputTrainNumberTextField;
+            dataForUpdateList.add(dataForUpdate);
+            request.setService(Constants.ClientService.addTrain);
+        } else if (addStationRadioButton.isSelected()) {
+            if (dataForUpdate.getFromStation() == null || dataForUpdate.getFromStation().equals("")) {
+                JOptionPane.showMessageDialog(null, "Некорректно введена информация о добавляемй станции");
+                return;
+            }
 
-    private PassengersTableModel passengersTableModel;
-    private TrainsTableModel trainsTableModel;
-    private TrainsTableModel saleTrainsTableModel;
+            dataForUpdateList.add(dataForUpdate);
+            request.setService(Constants.ClientService.addStation);
+        } else if (addRouteRadioButton.isSelected()) {
+            request.setService(Constants.ClientService.addRoute);
+            try {
+                routeInfoHandler(routeInfo);
+            } catch (EntityUpdateException ex) {
+                JOptionPane.showMessageDialog(null, ex.getMessage());
+            }
+        } else JOptionPane.showMessageDialog(null, "Не выбрана ни одна из опций");
 
-    private List<ScheduleDTO> dataForUpdateList;    //Instances of ScheduleDTO will fill the list depending on the
-                                                    //selected option. If administrator will choose "add train" option,
-                                                    //this list will consist of one ScheduleDTO instance, in which
-                                                    //will be specified parameters of new train (number and vacancies).
-                                                    //If administrator will choose "add station", in the list also will
-                                                    //be one element (only with name of station). And if "add route"
-                                                    //option - list will consist of elements each of them represents
-                                                    //station in route (name, time of arrival and departure).
+        request.setObject(dataForUpdateList);
 
-    private ScheduleDTO dataForUpdate;              //In this variable we will put some information when one of the
-                                                    //"add new entity" option is selected. Which information depends on
-                                                    //what option is selected. Or when we need receive schedule
-                                                    //to sale ticket.
+        if (!dataForUpdateList.isEmpty()) {
+            ResponseDTO responce;
 
-    private String routeInfo;                       //This string contains information about route entered by admin
-    //in appropriate text pane.
+            try {
+                responce = ClientConnectionManager.connect(request);
+            } catch (ConnectToServerException ex) {
+                JOptionPane.showMessageDialog(null, ex.getMessage());
+                return;
+            }
 
-    private RequestDTO request;
+            JOptionPane.showMessageDialog(null, (String) responce.getObject());
 
-    private JFrame frame;                           //Frame in which this instance of panel is embedded.
+            dataForUpdateList.clear();
+            clearWidgetsContent();
+        }
+    }
 
-    private int rowNumber;                          //Row, selected in trainsTable
+    /**
+     * When user pressed enter when trainNumberToViewPassengersTextField in focus.
+     */
+    private void trainNumberToViewPassengersTextFieldActionPerformed() {
+        int trainNumber = 0;
 
-    private OrderDTO order;
+        try {
+            trainNumber = Integer.parseInt(trainNumberToViewPassengersTextField.getText());
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(null, "Некорректно введен номер поезда");
+            return;
+        }
+        dataForUpdate.setNumber(trainNumber);
+        dataForUpdateList.add(dataForUpdate);
+
+        request.setService(Constants.ClientService.viewPassangers);
+        request.setObject(dataForUpdateList);
+
+        ResponseDTO responce;
+        try {
+            responce = ClientConnectionManager.connect(request);
+        } catch (ConnectToServerException ex) {
+            JOptionPane.showMessageDialog(null, ex.getMessage());
+            return;
+        }
+
+        if (responce.getStatus() == Constants.StatusOfExecutedService.success) {
+            passengersTableModel.setPassengers((List<PassengerDTO>) responce.getObject());
+            passengersTableModel.fireTableDataChanged();
+        } else if (responce.getStatus() == Constants.StatusOfExecutedService.error) {
+            passengersTableModel.setPassengers(new ArrayList<PassengerDTO>());
+            passengersTableModel.fireTableDataChanged();
+            JOptionPane.showMessageDialog(null, "На указанный поезд пассажиров нет");
+        }
+    }
+
+    private void showTrainsButtonActionPerformed() {
+        ResponseDTO responce;
+        try {
+            responce = ClientConnectionManager.connect(new RequestDTO(Constants.ClientService.viewTrains, null));
+        } catch (ConnectToServerException ex) {
+            JOptionPane.showMessageDialog(null, ex.getMessage());
+            return;
+        }
+
+        if (responce.getStatus() == Constants.StatusOfExecutedService.success) {
+            trainsTableModel.setTrains((ArrayList<ScheduleDTO>) responce.getObject());
+            trainsTableModel.fireTableDataChanged();
+        } else if (responce.getStatus() == Constants.StatusOfExecutedService.error) {
+            JOptionPane.showMessageDialog(null, (String) responce.getObject());
+        }
+    }
+
+    /**
+     * When user pressed saleShowButton
+     */
+    private void saleShowButtonActionPerformed() {
+        if (dataForUpdate.getFromStation() == null || dataForUpdate.getFromStation().equals("")) {
+            JOptionPane.showMessageDialog(null, "Некорректно введена станция отправления. Повторите ввод.");
+            return;
+        } else if (dataForUpdate.getToStation() == null || dataForUpdate.getToStation().equals("")) {
+            JOptionPane.showMessageDialog(null, "Некорректно введена станция прибытия. Повторите ввод.");
+            return;
+        } else if (dataForUpdate.getDepartureTime().after(dataForUpdate.getArrivalTime())) {
+            JOptionPane.showMessageDialog(null, "Некорректно введен временной интервал. Повторите ввод.");
+            return;
+        }
+
+        request.setService(Constants.ClientService.getScheduleFromAtoB);
+        request.setObject(dataForUpdate);
+
+        ResponseDTO responce;
+        try {
+            responce = ClientConnectionManager.connect(request);
+        } catch (ConnectToServerException ex) {
+            JOptionPane.showMessageDialog(null, ex.getMessage());
+            return ;
+        }
+
+        if (responce.getStatus() == Constants.StatusOfExecutedService.success) {
+            saleTrainsTableModel.setTrains((ArrayList<ScheduleDTO>) responce.getObject());
+            saleTrainsTableModel.fireTableDataChanged();
+        } else if (responce.getStatus() == Constants.StatusOfExecutedService.error) {
+            JOptionPane.showMessageDialog(null, (String) responce.getObject());
+        }
+    }
+
+    /**
+     * When user pressed registerButtonAction
+     */
+    private void registerButtonActionPerformed() {
+        ArrayList<ScheduleDTO> schedule = saleTrainsTableModel.getTrains();
+
+        request.setService(Constants.ClientService.buyTicket);
+
+        int row = saleTrainsTable.getSelectedRow();
+
+        if (row == -1) {
+            JOptionPane.showMessageDialog(null, "Не выбран поезд");
+            return;
+        }
+
+        order.setTrainNumber(schedule.get(row).getNumber());
+        order.setFromStation(schedule.get(row).getFromStation());
+
+        if (order.getFirstName() == null || order.getFirstName() == "") {
+            JOptionPane.showMessageDialog(null, "Некорректно введено имя. Повторите ввод.");
+            return;
+        } else if (order.getSecondName() == null || order.getSecondName() == "") {
+            JOptionPane.showMessageDialog(null, "Некорректно введена фамилия. Повторите ввод.");
+            return;
+        }
+
+        request.setObject(order);
+
+        ResponseDTO responce;
+        try {
+            responce = ClientConnectionManager.connect(request);
+        } catch (ConnectToServerException ex) {
+            JOptionPane.showMessageDialog(null, ex.getMessage());
+            return ;
+        }
+
+        if (responce.getStatus() == Constants.StatusOfExecutedService.success) {
+            JOptionPane.showMessageDialog(null, "Пассажир успешно зарегистрирован");
+        } else if (responce.getStatus() == Constants.StatusOfExecutedService.error) {
+            JOptionPane.showMessageDialog(null, ((Exception)responce.getObject()).getMessage());
+        }
+
+        clearSaleWidgetsContent();
+    }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
@@ -892,7 +970,7 @@ public class AdministratorGUIPanel extends javax.swing.JPanel {
                 JFrame frame = new JFrame();
                 frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                 frame.setSize(650, 520);
-                frame.getContentPane().add(new AdministratorGUIPanel(frame));
+                frame.getContentPane().add(new AdministratorGUIPanel());
                 frame.setLocationRelativeTo(null);
                 frame.setVisible(true);
             }

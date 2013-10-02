@@ -7,11 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created with IntelliJ IDEA.
- * User: danya_000
- * Date: 9/28/13
- * Time: 9:00 PM
- * To change this template use File | Settings | File Templates.
+ * Table model for tables which describes passengers on particular train.
  */
 public class PassengersTableModel extends AbstractTableModel {
     List<PassengerDTO> passengers;

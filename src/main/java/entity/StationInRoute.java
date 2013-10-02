@@ -6,13 +6,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 
-/**
- * Created with IntelliJ IDEA.
- * User: danya_000
- * Date: 9/21/13
- * Time: 2:48 AM
- * To change this template use File | Settings | File Templates.
- */
+
 @Entity
 @Table(name = "station_in_route")
 public class StationInRoute {

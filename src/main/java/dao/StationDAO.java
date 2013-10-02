@@ -9,11 +9,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 
 /**
- * Created with IntelliJ IDEA.
- * User: danya_000
- * Date: 9/29/13
- * Time: 1:50 AM
- * To change this template use File | Settings | File Templates.
+ * DAO for Station entity
  */
 public class StationDAO {
     private static final Logger log = Logger.getLogger(Passenger.class);
@@ -24,7 +20,9 @@ public class StationDAO {
         entityManagerFactory = factory;
     }
 
-    public void addStation(String name) throws EntityUpdateException{
+    public boolean addStation(String name) throws EntityUpdateException{
+        log.debug("Start: addStation()");
+
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         entityManager.getTransaction().begin();
 
@@ -34,8 +32,12 @@ public class StationDAO {
         try {
             entityManager.getTransaction().commit();
         } catch (Exception e) {
-            throw new EntityUpdateException("Ошибка! Станция с таким названием уже существует.");
+            log.error("Exception station with the given name already exists");
+            throw new EntityUpdateException("Ошибка! Станция с таким названием уже существует");
         }
+
+        log.debug("Finish: addStation()");
+        return true;
 
     }
 }

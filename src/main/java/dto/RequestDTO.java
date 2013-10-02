@@ -1,11 +1,11 @@
 package dto;
 
-import protocol.Constants;
+import common.Constants;
 
 import java.io.Serializable;
 
 /**
- * Request data from client to db. It transmitted to db through serialization with nio. It encapsulates
+ * Request data from client to server. It transmitted to server through serialization with nio. It encapsulates
  * type of desired service and parameters for executing this service.
  */
 public class RequestDTO implements Serializable{

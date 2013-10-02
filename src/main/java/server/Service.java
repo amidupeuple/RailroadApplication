@@ -1,9 +1,10 @@
 package server;
 
+import dao.*;
 import dto.RequestDTO;
 import dto.ResponseDTO;
 import org.apache.log4j.Logger;
-import protocol.*;
+import common.*;
 import server.exceptions.BookingTicketException;
 import server.services.*;
 
@@ -11,7 +12,7 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 
 /**
- * It encapsulates methods which execute all possible services provided by db for clients
+ * Access point to various services
  */
 public class Service {
     private static final Logger log = Logger.getLogger(Service.class);
@@ -34,46 +35,50 @@ public class Service {
      * @return Data which are requested by user.
      */
     public static ResponseDTO execute(RequestDTO reqObj) throws BookingTicketException {
-        TicketService ticketService = new TicketService(ENTITY_MANAGER_FACTORY);
-        StationInRouteService sirService = new StationInRouteService(ENTITY_MANAGER_FACTORY);
-        TrainService trainService = new TrainService(ENTITY_MANAGER_FACTORY);
-        StationService stationService = new StationService(ENTITY_MANAGER_FACTORY);
-        PassengerService pasService = new PassengerService(ENTITY_MANAGER_FACTORY);
+        log.debug("Start: execute()");
 
+        PassengerDAO passengerDAO = new PassengerDAO(ENTITY_MANAGER_FACTORY);
+        StationInRouteDAO sirDAO = new StationInRouteDAO(ENTITY_MANAGER_FACTORY);
+        StationDAO stationDAO = new StationDAO(ENTITY_MANAGER_FACTORY);
+        TicketDAO ticketDAO = new TicketDAO(ENTITY_MANAGER_FACTORY);
+        TrainDAO trainDAO = new TrainDAO(ENTITY_MANAGER_FACTORY);
 
         //Determines what kind of server was required.
         Constants.ClientService reqService = reqObj.getService();
 
-        if (reqService == Constants.ClientService.getScheduleFromAtoB)     return sirService.scheduleFromAtoB(reqObj);
-        else if (reqService == Constants.ClientService.scheduleForStation) return sirService.scheduleForStation(reqObj);
-        else if (reqService == Constants.ClientService.buyTicket)          return ticketService.bookTicket(reqObj);
-        else if (reqService == Constants.ClientService.addTrain)           return trainService.addTrain(reqObj);
-        else if (reqService == Constants.ClientService.addStation)         return stationService.addStation(reqObj);
-        else if (reqService == Constants.ClientService.addRoute)           return sirService.addRoute(reqObj);
-        else if (reqService == Constants.ClientService.viewPassangers)     return pasService.showPassengers(reqObj);
-        else if (reqService == Constants.ClientService.viewTrains)         return trainService.viewAllTrains();
-        else if (reqService == Constants.ClientService.saleTicket)         return saleTicket();
+        if (reqService == Constants.ClientService.getScheduleFromAtoB) {
+            log.debug("Start: getScheduleFromAtoB");
+            return StationInRouteService.scheduleFromAtoB(reqObj, sirDAO);
+        }
+        else if (reqService == Constants.ClientService.scheduleForStation) {
+            log.debug("Start: scheduleForStation");
+            return StationInRouteService.scheduleForStation(reqObj, sirDAO);
+        }
+        else if (reqService == Constants.ClientService.buyTicket) {
+            log.debug("Start: buyTicket");
+            return TicketService.bookTicket(reqObj, passengerDAO, ticketDAO, trainDAO, sirDAO);
+        }
+        else if (reqService == Constants.ClientService.addTrain) {
+            log.debug("Start: buyTicket");
+            return TrainService.addTrain(reqObj, trainDAO);
+        }
+        else if (reqService == Constants.ClientService.addStation) {
+            log.debug("Start: addStation");
+            return StationService.addStation(reqObj, stationDAO);
+        }
+        else if (reqService == Constants.ClientService.addRoute) {
+            log.debug("Start: addRoute");
+            return StationInRouteService.addRoute(reqObj, sirDAO);
+        }
+        else if (reqService == Constants.ClientService.viewPassangers) {
+            log.debug("Start: viewPassangers");
+            return PassengerService.showPassengers(reqObj, passengerDAO);
+        }
+        else if (reqService == Constants.ClientService.viewTrains) {
+            log.debug("Start: viewTrains");
+            return TrainService.viewAllTrains(trainDAO);
+        }
         else return null;
     }
 
-
-
-
-    private static ResponseDTO saleTicket() {
-        return new ResponseDTO();
-    }
-
-    private static ResponseDTO addNewEntity() {
-
-        return new ResponseDTO();
-    }
-
-
-    private static ResponseDTO viewPassengersOnTrain() {
-        return new ResponseDTO();
-    }
-
-    private static ResponseDTO viewTrains() {
-        return new ResponseDTO();
-    }
 }

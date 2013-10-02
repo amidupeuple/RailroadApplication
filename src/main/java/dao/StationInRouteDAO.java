@@ -1,5 +1,6 @@
 package dao;
 
+import dto.RequestDTO;
 import dto.ScheduleDTO;
 import entity.Route;
 import entity.Station;
@@ -107,13 +108,10 @@ public class StationInRouteDAO {
      * We set in the fromStation field of ScheduleDTO object starting station in particular route, and in the field
      * toStation we set finish station of particular route. In the field departureTime we set departureTime from
      * station A, and in arrivalTime we set arrival time to the station B.
-     * @param stationA
-     * @param stationB
-     * @param from - start of time interval
-     * @param to - finish of time interval
+     * @
      * @return list os schedule objects.
      */
-    public List<ScheduleDTO> getScheduleFromAtoB(String stationA, String stationB, Time from, Time to) throws GetScheduleException {
+    public List<ScheduleDTO> getScheduleFromAtoB(ScheduleDTO request) throws GetScheduleException {
         log.debug("Start: getScheduleFromAtoB()");
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         entityManager.getTransaction().begin();
@@ -123,14 +121,20 @@ public class StationInRouteDAO {
         //Check if desired stations exist in DB.
         List<Station> stationABuf = entityManager.createQuery(
                 "select s from Station s where s.name = ?1"
-        ).setParameter(1, stationA).getResultList();
+        ).setParameter(1, request.getFromStation()).getResultList();
 
         List<Station> stationBBuf = entityManager.createQuery(
                 "select s from Station s where s.name = ?1"
-        ).setParameter(1, stationB).getResultList();
+        ).setParameter(1, request.getToStation()).getResultList();
 
-        if (stationABuf.isEmpty()) throw new GetScheduleException("Станция отправления отсутствует в базе данных");
-        else if (stationBBuf.isEmpty()) throw new GetScheduleException("Станция прибытия отсутствует в базе данных");
+        if (stationABuf.isEmpty()) {
+            log.error("Departure station is absent in Station table in DB");
+            throw new GetScheduleException("Станция отправления отсутствует в базе данных");
+        }
+        else if (stationBBuf.isEmpty()) {
+            log.error("Arrival station is absent in Station table in DB");
+            throw new GetScheduleException("Станция прибытия отсутствует в базе данных");
+        }
 
 
 
@@ -150,17 +154,20 @@ public class StationInRouteDAO {
                 "                           where sir6.train.id = sir2.train.id) and " +
                 "      sir3.station.name = ?1 and sir4.station.name = ?2 and " +
                 "      sir3.departureTime > ?3 and sir4.arrivalTime < ?4"
-        ).setParameter(1, stationA)
-        .setParameter(2, stationB)
-        .setParameter(3, from)
-        .setParameter(4, to)
+        ).setParameter(1, request.getFromStation())
+        .setParameter(2, request.getToStation())
+        .setParameter(3, request.getDepartureTime())
+        .setParameter(4, request.getArrivalTime())
         .getResultList();
 
         entityManager.getTransaction().commit();
 
         int size = resultList.size();
 
-        if (size == 0) throw new GetScheduleException("Для задданных условий нет расписания поездов");
+        if (size == 0) {
+            log.warn("No schedule for given conditions");
+            throw new GetScheduleException("Для задданных условий нет расписания поездов");
+        }
 
 
         // Packaging response list of objects based on data retrieved from data base.
@@ -168,8 +175,8 @@ public class StationInRouteDAO {
         for (int i = 0; i < size; i++) {
             Object[] stationsBuf = resultList.get(i);
             scheduleList.add(new ScheduleDTO((Integer) stationsBuf[0],
-                    stationA,
-                    stationB,
+                    request.getFromStation(),
+                    request.getToStation(),
                     (Time) stationsBuf[3],
                     (Time) stationsBuf[4],
                     (Integer) stationsBuf[5]));
@@ -195,7 +202,10 @@ public class StationInRouteDAO {
                 "select s from Station s where s.name = ?1"
         ).setParameter(1, userRequirements.getFromStation()).getResultList();
 
-        if (stationBuf.isEmpty()) throw new GetScheduleException("Выбранная станция отсутствует в базе данных");
+        if (stationBuf.isEmpty()) {
+            log.warn("given station is absent in DB");
+            throw new GetScheduleException("Выбранная станция отсутствует в базе данных");
+        }
 
 
         //This query returns list of Objects arrays, each array contains such elements: 0 - train number, 1 - first
@@ -220,7 +230,10 @@ public class StationInRouteDAO {
 
 
         //Check, if size == 0, then no schedule for given station.
-        if (size == 0) throw new GetScheduleException("Для запрошенной станции нет расписания");
+        if (size == 0) {
+            log.warn("No schedule for requested station");
+            throw new GetScheduleException("Для запрошенной станции нет расписания");
+        }
 
 
         ArrayList<ScheduleDTO> scheduleList = new ArrayList<ScheduleDTO>(size);
