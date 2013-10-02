@@ -34,7 +34,7 @@ public class Service {
      * @param reqObj - instructions and required data to execute appropriate service, passed from client.
      * @return Data which are requested by user.
      */
-    public static ResponseDTO execute(RequestDTO reqObj) throws BookingTicketException {
+    public static ResponseDTO execute(RequestDTO reqObj)  {
         log.debug("Start: execute()");
 
         PassengerDAO passengerDAO = new PassengerDAO(ENTITY_MANAGER_FACTORY);

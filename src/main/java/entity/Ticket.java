@@ -27,7 +27,7 @@ public class Ticket {
         this.id = id;
     }
 
-    @ManyToOne
+    @ManyToOne(targetEntity = Train.class)
     public Train getTrain() {
         return train;
     }
@@ -36,7 +36,7 @@ public class Ticket {
         this.train = train;
     }
 
-    @ManyToOne
+    @ManyToOne(targetEntity = Passenger.class)
     public Passenger getPassenger() {
         return passenger;
     }

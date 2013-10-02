@@ -38,7 +38,7 @@ public class TicketService {
                                          PassengerDAO passengerDAO,
                                          TicketDAO ticketDAO,
                                          TrainDAO trainDAO,
-                                         StationInRouteDAO sirDAO) throws BookingTicketException {
+                                         StationInRouteDAO sirDAO) {
         log.debug("BookTicket() start executing");
 
 

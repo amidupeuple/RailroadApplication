@@ -62,7 +62,7 @@ public class StationInRoute {
         this.arrivalTime = arrivalTime;
     }
 
-    @ManyToOne
+    @ManyToOne(targetEntity = Route.class)
     public Route getRoute() {
         return route;
     }
@@ -71,7 +71,7 @@ public class StationInRoute {
         this.route = route;
     }
 
-    @ManyToOne
+    @ManyToOne(targetEntity = Train.class)
     public Train getTrain() {
         return train;
     }

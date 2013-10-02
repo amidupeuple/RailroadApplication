@@ -9,6 +9,11 @@
         </description>
 
         <class>entity.Train</class>
+        <class>entity.Station</class>
+        <class>entity.Passenger</class>
+        <class>entity.StationInRoute</class>
+        <class>entity.Ticket</class>
+        <class>entity.Route</class>
 
         <properties>
             <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver" />
